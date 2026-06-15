@@ -1,14 +1,16 @@
 """
-NLP-to-SQL — Phase-1 POC.
+NLP-to-SQL — Phase-2 POC (vector retrieval + semantic layer).
 
 Pipeline (see README for the full architecture):
 
     question
-      -> 1. SEMANTIC LAYER : pick the table from synonyms + expand status phrases
-      -> 2. SCHEMA SLICE   : serialize ONLY that table's columns (not all 500)
-      -> 3. GENERATE SQL   : Claude (claude-opus-4-8), or --mock rule-based
-      -> 4. VALIDATE        : SELECT-only, known tables, auto-LIMIT (sqlglot)
-      -> 5. EXECUTE         : run against the SQLite stand-in, print rows
+      -> 1. RETRIEVAL      : rank tables by vector similarity, take the best
+                            (scales to 500 tables; see retrieval.py)
+      -> 2. SEMANTIC LAYER : expand value phrases (open -> status IN (...))
+      -> 3. SCHEMA SLICE   : serialize ONLY the chosen table's columns
+      -> 4. GENERATE SQL   : Claude (claude-opus-4-8), or --mock rule-based
+      -> 5. VALIDATE        : SELECT-only, known tables, auto-LIMIT (sqlglot)
+      -> 6. EXECUTE         : run against the SQLite stand-in, print rows
 
 Run:
     python nl_to_sql.py "show me any open issues"            # uses Claude (needs ANTHROPIC_API_KEY)
@@ -24,6 +26,7 @@ import sqlglot
 import sqlglot.expressions as exp
 import yaml
 
+from retrieval import TableRetriever
 from schema import build_db
 
 MODEL = "claude-opus-4-8"
@@ -38,19 +41,8 @@ def load_semantic_layer(path: str = "semantic_layer.yaml") -> dict:
 
 
 # --------------------------------------------------------------------------- #
-# 1. SEMANTIC LAYER — resolve business words to the schema
+# 1. RETRIEVAL + SEMANTIC LAYER — resolve business words to the schema
 # --------------------------------------------------------------------------- #
-def pick_table(question: str, layer: dict) -> str | None:
-    """Find which table the question is about, via the synonym lists."""
-    q = question.lower()
-    for table, meta in layer["tables"].items():
-        for syn in meta["synonyms"]:
-            # allow a trailing plural 's' so "issues" matches the synonym "issue"
-            if re.search(rf"\b{re.escape(syn)}s?\b", q):
-                return table
-    return None
-
-
 def resolve_value_hints(question: str, table: str, layer: dict) -> list[str]:
     """
     Turn phrases like 'open' / 'unresolved' into concrete value mappings for
@@ -164,15 +156,20 @@ def validate_sql(sql: str, allowed_tables: set[str], limit: int = 100) -> str:
 # --------------------------------------------------------------------------- #
 # Orchestration
 # --------------------------------------------------------------------------- #
-def answer(question: str, layer: dict, conn, use_mock: bool) -> None:
+def answer(question: str, layer: dict, conn, retriever: TableRetriever, use_mock: bool) -> None:
     print(f"Q: {question}")
 
-    table = pick_table(question, layer)
+    # 1. RETRIEVAL — rank tables by similarity, take the best (scales to 500 tables)
+    table, ranked = retriever.top_table(question)
+    top3 = ", ".join(f"{t}={s:.2f}" for t, s in ranked[:3])
+    print(f"  retrieval      -> candidates: {top3}")
     if not table:
-        print("  ✗ Could not map the question to a known table (extend the semantic layer).")
+        print("  ✗ No table scored above threshold (extend the semantic layer / descriptions).")
         return
+
+    # then the SEMANTIC LAYER expands value phrases for the chosen table
     hints = resolve_value_hints(question, table, layer)
-    print(f"  semantic layer -> table '{table}'")
+    print(f"  chosen table   -> '{table}'")
     for h in hints:
         print(f"  value mapping  -> {h}")
 
@@ -195,10 +192,10 @@ def answer(question: str, layer: dict, conn, use_mock: bool) -> None:
 
 
 DEMO_QUESTIONS = [
-    "show me any open issues",
-    "list unresolved tickets",
-    "which incidents are closed?",
-    "show pending changes",
+    "show me any open issues",          # -> incident
+    "list retired hardware",            # -> asset
+    "show pending changes",             # -> change_request
+    "list all employees",               # -> app_user
 ]
 
 
@@ -210,11 +207,12 @@ def main() -> None:
 
     layer = load_semantic_layer()
     conn = build_db()
+    retriever = TableRetriever(layer)
 
     questions = [args.question] if args.question else DEMO_QUESTIONS
     for q in questions:
         try:
-            answer(q, layer, conn, use_mock=args.mock)
+            answer(q, layer, conn, retriever, use_mock=args.mock)
         except ValueError as e:
             print(f"  ✗ {e}\n", file=sys.stderr)
 

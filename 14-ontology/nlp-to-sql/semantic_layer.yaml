@@ -35,6 +35,25 @@ tables:
       risk:        { type: TEXT,    description: "low / medium / high" }
       requester:   { type: TEXT,    description: "Person who requested the change" }
 
+  asset:
+    description: IT hardware inventory — laptops, desktops, monitors, servers and devices.
+    synonyms: [asset, device, hardware, laptop, machine, equipment, server, computer]
+    columns:
+      id:     { type: INTEGER, description: "Primary key" }
+      name:   { type: TEXT,    description: "Asset name / tag" }
+      kind:   { type: TEXT,    description: "laptop / desktop / monitor / server" }
+      state:  { type: TEXT,    description: "Lifecycle state of the asset" }
+      owner:  { type: TEXT,    description: "Person the asset is assigned to" }
+
+  app_user:
+    description: People and employees who use IT services — the staff directory.
+    synonyms: [user, person, employee, staff, people, requester, member]
+    columns:
+      id:         { type: INTEGER, description: "Primary key" }
+      name:       { type: TEXT,    description: "Full name" }
+      department: { type: TEXT,    description: "Department / team" }
+      email:      { type: TEXT,    description: "Email address" }
+
 # -----------------------------------------------------------------------------
 #  VALUE SYNONYMS
 #  Maps the words people say about a column's value to the actual values stored
@@ -70,3 +89,16 @@ value_synonyms:
       closed: done
       done: done
       implemented: done
+
+  asset.state:
+    groups:
+      in_use:  [in_use, deployed]
+      retired: [retired, decommissioned, disposed]
+    phrases:
+      "in use": in_use
+      deployed: in_use
+      active: in_use
+      retired: retired
+      decommissioned: retired
+      disposed: retired
+      old: retired

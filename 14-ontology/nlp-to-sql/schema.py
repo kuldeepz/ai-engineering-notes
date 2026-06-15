@@ -23,6 +23,21 @@ CREATE TABLE change_request (
     risk      TEXT,
     requester TEXT
 );
+
+CREATE TABLE asset (
+    id    INTEGER PRIMARY KEY,
+    name  TEXT,
+    kind  TEXT,
+    state TEXT,
+    owner TEXT
+);
+
+CREATE TABLE app_user (
+    id         INTEGER PRIMARY KEY,
+    name       TEXT,
+    department TEXT,
+    email      TEXT
+);
 """
 
 INCIDENTS = [
@@ -40,11 +55,27 @@ CHANGES = [
     (3, "Rotate TLS certs",      "implemented", "low",    "Alex"),
 ]
 
+ASSETS = [
+    (1, "LT-1001",   "laptop",  "in_use",        "Priya"),
+    (2, "LT-1002",   "laptop",  "retired",       "Sam"),
+    (3, "MON-22",    "monitor", "in_use",        "Alex"),
+    (4, "SRV-prod1", "server",  "in_use",        "ops"),
+    (5, "LT-0007",   "laptop",  "decommissioned","Alex"),
+]
+
+USERS = [
+    (1, "Priya Nair",   "IT Operations", "priya@example.com"),
+    (2, "Sam Okoro",    "Service Desk",  "sam@example.com"),
+    (3, "Alex Romano",  "Engineering",   "alex@example.com"),
+]
+
 
 def build_db() -> sqlite3.Connection:
     conn = sqlite3.connect(":memory:")
     conn.executescript(DDL)
     conn.executemany("INSERT INTO incident VALUES (?,?,?,?,?,?)", INCIDENTS)
     conn.executemany("INSERT INTO change_request VALUES (?,?,?,?,?)", CHANGES)
+    conn.executemany("INSERT INTO asset VALUES (?,?,?,?,?)", ASSETS)
+    conn.executemany("INSERT INTO app_user VALUES (?,?,?,?)", USERS)
     conn.commit()
     return conn
