@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ML Model Evaluation — Offline, Online, and LLM-as-Judge</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+:root{--bg:#0f1117;--bg2:#161b27;--bg3:#1e2535;--border:rgba(255,255,255,0.08);--text:#e2e8f0;--muted:#8892a4;--accent:#6366f1;--accent2:#22d3ee;--accent3:#f59e0b;--green:#10b981;--red:#f43f5e;--purple:#a78bfa;--font:'Inter',sans-serif;--mono:'JetBrains Mono',monospace;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.7;overflow-x:hidden;}
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4rem 2rem;position:relative;overflow:hidden;}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(99,102,241,0.07) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,0.07) 1px,transparent 1px);background-size:48px 48px;mask-image:radial-gradient(ellipse at center,black 30%,transparent 80%);}
+.hero-glow{position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(34,211,238,0.1) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);border-radius:100px;padding:6px 16px;font-size:12px;font-weight:500;color:#a5b4fc;margin-bottom:2rem;letter-spacing:0.05em;text-transform:uppercase;}
+.hero h1{font-size:clamp(2.5rem,6vw,4.5rem);font-weight:600;letter-spacing:-0.03em;line-height:1.1;margin-bottom:1.5rem;position:relative;}
+.hero h1 span{background:linear-gradient(135deg,#22d3ee,#6366f1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hero p{font-size:1.15rem;color:var(--muted);max-width:600px;margin-bottom:3rem;position:relative;}
+.hero-stats{display:flex;gap:3rem;position:relative;flex-wrap:wrap;justify-content:center;}
+.stat{text-align:center;}.stat-num{font-size:2rem;font-weight:600;color:var(--accent2);font-family:var(--mono);}.stat-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;}
+.scroll-hint{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);color:var(--muted);font-size:12px;display:flex;flex-direction:column;align-items:center;gap:8px;animation:bounce 2s ease-in-out infinite;}
+@keyframes bounce{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(8px)}}
+.section{max-width:960px;margin:0 auto;padding:5rem 2rem;opacity:0;transform:translateY(30px);transition:opacity 0.6s ease,transform 0.6s ease;}
+.section.visible{opacity:1;transform:translateY(0);}
+.section-label{font-size:11px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:0.75rem;}
+.section h2{font-size:clamp(1.6rem,3vw,2.2rem);font-weight:600;letter-spacing:-0.02em;margin-bottom:1rem;line-height:1.2;}
+.section-intro{color:var(--muted);font-size:1.05rem;max-width:700px;margin-bottom:3rem;}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1.5rem;transition:border-color 0.2s,transform 0.2s;}
+.card:hover{border-color:rgba(99,102,241,0.3);transform:translateY(-2px);}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;}
+.card-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:1rem;}
+.card h3{font-size:1rem;font-weight:600;margin-bottom:0.5rem;}.card p{font-size:13px;color:var(--muted);line-height:1.6;}
+.tag{display:inline-block;font-size:11px;font-weight:500;padding:3px 10px;border-radius:100px;margin-top:0.75rem;}
+.tab-controls{display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1.5rem;border-bottom:1px solid var(--border);padding-bottom:1rem;}
+.tab-btn{padding:8px 18px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--muted);font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.2s;}
+.tab-btn.active{background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.3);color:#a5b4fc;}
+.tab-btn:hover:not(.active){color:var(--text);}
+.tab-panel{display:none;animation:fadeIn 0.3s ease;}.tab-panel.active{display:block;}
+.flow{display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin:1.5rem 0;}
+.flow-node{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.6rem 1rem;font-size:12px;font-weight:500;text-align:center;min-width:90px;line-height:1.4;}
+.flow-arrow{color:var(--muted);font-size:16px;flex-shrink:0;}
+.flow-node.hi{background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.4);color:#a5b4fc;}
+.scale-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:1.5rem;}
+.scale-table th{text-align:left;padding:10px 16px;background:var(--bg3);color:var(--muted);font-weight:500;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;}
+.scale-table th:first-child{border-radius:8px 0 0 8px;}.scale-table th:last-child{border-radius:0 8px 8px 0;}
+.scale-table td{padding:12px 16px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.6;}
+.scale-table tr:last-child td{border-bottom:none;}.scale-table tr:hover td{background:rgba(255,255,255,0.02);}
+.answer-box{background:linear-gradient(135deg,rgba(99,102,241,0.08),rgba(34,211,238,0.05));border:1px solid rgba(99,102,241,0.25);border-radius:16px;padding:2rem;margin-top:2rem;}
+.answer-box p{font-size:14px;color:var(--muted);line-height:1.9;}.answer-box p+p{margin-top:0.75rem;}
+.code-block{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:1.25rem 1.5rem;font-family:var(--mono);font-size:12px;line-height:1.8;overflow-x:auto;margin-top:1rem;}
+.cc{color:#6b7280}.ck{color:#a78bfa}.cs{color:#34d399}.cf{color:#60a5fa}.cn{color:#f59e0b}
+.badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:500;}
+.divider{width:100%;height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:2rem 0;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:3px}
+@media(max-width:640px){.hero-stats{gap:1.5rem}.flow{flex-direction:column}.flow-arrow{transform:rotate(90deg)}.tab-btn{padding:6px 12px;font-size:12px}}
+@media(prefers-reduced-motion:reduce){*,.section{animation:none!important;transition:none!important}}
+
+/* file-specific */
+.ragas-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;margin-top:1.5rem;}
+.ragas-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1.25rem;cursor:pointer;transition:border-color 0.2s,transform 0.2s;}
+.ragas-card:hover{border-color:rgba(99,102,241,0.3);transform:translateY(-2px);}
+.ragas-card.expanded{border-color:rgba(99,102,241,0.5);}
+.ragas-card .rc-header{display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem;}
+.ragas-card .rc-name{font-size:14px;font-weight:600;}
+.ragas-card .rc-score{font-family:var(--mono);font-size:12px;color:var(--accent2);}
+.ragas-card .rc-desc{font-size:12px;color:var(--muted);margin-top:0.5rem;}
+.ragas-card .rc-detail{display:none;margin-top:1rem;border-top:1px solid var(--border);padding-top:1rem;}
+.ragas-card.expanded .rc-detail{display:block;}
+.rc-detail p{font-size:12px;color:var(--muted);margin-bottom:0.5rem;}
+.rc-detail .formula{font-family:var(--mono);font-size:11px;background:var(--bg3);padding:0.5rem 0.75rem;border-radius:8px;color:var(--accent3);}
+.metric-row{display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem;}
+.metric-bar{flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;}
+.metric-fill{height:100%;border-radius:3px;transition:width 0.8s ease;}
+.metric-val{font-family:var(--mono);font-size:12px;color:var(--muted);min-width:36px;text-align:right;}
+.ab-flow{display:grid;grid-template-columns:1fr auto 1fr;gap:1rem;align-items:center;margin:1.5rem 0;}
+.ab-model{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1.25rem;text-align:center;}
+.ab-model h4{font-size:13px;font-weight:600;margin-bottom:0.5rem;}
+.ab-model .ab-rate{font-family:var(--mono);font-size:1.5rem;font-weight:600;}
+.ab-vs{font-size:1.25rem;color:var(--muted);text-align:center;}
+.traffic-bar{height:12px;background:var(--bg3);border-radius:6px;overflow:hidden;display:flex;margin:1rem 0;}
+.traffic-a{background:var(--accent);height:100%;border-radius:6px 0 0 6px;transition:width 0.5s;}
+.traffic-b{background:var(--accent2);height:100%;border-radius:0 6px 6px 0;transition:width 0.5s;}
+.anti-card{background:var(--bg2);border:1px solid rgba(244,63,94,0.2);border-radius:14px;padding:1.25rem;}
+.anti-card h3{font-size:14px;font-weight:600;margin-bottom:0.5rem;}
+.anti-card p{font-size:13px;color:var(--muted);}
+footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--border);color:var(--muted);font-size:13px;}
+footer span{color:var(--text);font-weight:500;}
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-badge">Evaluation · RAGAS · A/B Testing · LLM-as-Judge</div>
+  <h1>ML Model <span>Evaluation</span></h1>
+  <p>Offline, Online, and LLM-as-Judge — the complete framework for measuring what your model actually does in production.</p>
+  <div class="hero-stats">
+    <div class="stat"><div class="stat-num">3</div><div class="stat-label">Eval Types</div></div>
+    <div class="stat"><div class="stat-num">6</div><div class="stat-label">RAGAS Metrics</div></div>
+    <div class="stat"><div class="stat-num">2</div><div class="stat-label">Testing Strategies</div></div>
+    <div class="stat"><div class="stat-num">∞</div><div class="stat-label">Continuous</div></div>
+  </div>
+  <div class="scroll-hint">
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+    scroll to explore
+  </div>
+</section>
+
+<!-- SECTION 1: Foundation -->
+<section class="section">
+  <div class="section-label">Section 01</div>
+  <h2>Why evaluation is the hardest part of production ML</h2>
+  <p class="section-intro">A model that passes offline evaluation can still fail in production. Evaluation is not a one-time gate — it is a continuous process at every stage of deployment.</p>
+
+  <div class="card-grid">
+    <div class="card" style="border-top:3px solid var(--accent);">
+      <div class="card-icon" style="background:rgba(99,102,241,0.12)">📊</div>
+      <h3>Offline Evaluation</h3>
+      <p>Evaluated against a fixed dataset before deployment. Controlled, reproducible, but may not reflect real user behaviour. The baseline gate every model must pass.</p>
+      <span class="tag" style="background:rgba(99,102,241,0.12);color:#a5b4fc">Before deploy</span>
+    </div>
+    <div class="card" style="border-top:3px solid var(--accent2);">
+      <div class="card-icon" style="background:rgba(34,211,238,0.12)">📡</div>
+      <h3>Online Evaluation</h3>
+      <p>Measured with real users in production. A/B tests, shadow mode, canary deployments. The only way to measure true business impact and distribution shift.</p>
+      <span class="tag" style="background:rgba(34,211,238,0.12);color:var(--accent2)">After deploy</span>
+    </div>
+    <div class="card" style="border-top:3px solid var(--accent3);">
+      <div class="card-icon" style="background:rgba(245,158,11,0.12)">👤</div>
+      <h3>Human Evaluation</h3>
+      <p>Annotators or end-users judge model outputs directly. The gold standard for subjective tasks — but expensive, slow, and hard to scale. Used to calibrate automated metrics.</p>
+      <span class="tag" style="background:rgba(245,158,11,0.12);color:var(--accent3)">Ground truth</span>
+    </div>
+  </div>
+
+  <div style="background:var(--bg2);border:1px solid rgba(244,63,94,0.25);border-radius:14px;padding:1.25rem 1.5rem;margin-top:1.5rem;display:flex;gap:1rem;align-items:flex-start;">
+    <span style="font-size:1.25rem;flex-shrink:0;">⚠️</span>
+    <div>
+      <p style="font-weight:600;font-size:14px;margin-bottom:4px;">The fundamental trap</p>
+      <p style="font-size:13px;color:var(--muted);">Passing offline evaluation does not guarantee production quality. Real users ask different questions, provide edge-case inputs, and use the system in ways you never tested. Offline eval is necessary but never sufficient.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 2: Offline evaluation -->
+<section class="section">
+  <div class="section-label">Section 02</div>
+  <h2>Offline evaluation — before deployment</h2>
+  <p class="section-intro">The standard toolkit for evaluating a model before it touches production traffic.</p>
+
+  <div class="tab-controls">
+    <button class="tab-btn active" onclick="switchTabLocal(this,'off-split')">Train/Val/Test Split</button>
+    <button class="tab-btn" onclick="switchTabLocal(this,'off-cv')">Cross-validation</button>
+    <button class="tab-btn" onclick="switchTabLocal(this,'off-holdout')">Holdout Set</button>
+    <button class="tab-btn" onclick="switchTabLocal(this,'off-golden')">Golden Test Set</button>
+  </div>
+
+  <div id="off-split" class="tab-panel active">
+    <div class="flow">
+      <div class="flow-node hi">All Data</div><div class="flow-arrow">→</div>
+      <div class="flow-node" style="background:rgba(99,102,241,0.1);color:#a5b4fc;">70% Train</div><div class="flow-arrow">+</div>
+      <div class="flow-node" style="background:rgba(245,158,11,0.1);color:var(--accent3);">15% Val</div><div class="flow-arrow">+</div>
+      <div class="flow-node" style="background:rgba(16,185,129,0.1);color:var(--green);">15% Test</div>
+    </div>
+    <p style="font-size:13px;color:var(--muted);">The classic split. Train on train, tune hyperparameters on val, report final metrics on test (only once — peeking inflates scores). Key rule: the test set must never influence any decision during development.</p>
+  </div>
+
+  <div id="off-cv" class="tab-panel">
+    <div class="flow">
+      <div class="flow-node hi">All Data</div><div class="flow-arrow">→</div>
+      <div class="flow-node">Fold 1</div><div class="flow-arrow">→</div>
+      <div class="flow-node">Fold 2</div><div class="flow-arrow">→</div>
+      <div class="flow-node">Fold 3</div><div class="flow-arrow">→</div>
+      <div class="flow-node">...K folds</div><div class="flow-arrow">→</div>
+      <div class="flow-node hi">Avg Score ± Std</div>
+    </div>
+    <p style="font-size:13px;color:var(--muted);">K-fold cross-validation trains K times, each time using a different fold as the test set. Produces a mean and standard deviation, giving you confidence that your metric is not a lucky draw. Use when data is scarce (&lt;10,000 samples).</p>
+  </div>
+
+  <div id="off-holdout" class="tab-panel">
+    <div class="flow">
+      <div class="flow-node hi">Production Logs</div><div class="flow-arrow">→</div>
+      <div class="flow-node">Sample N queries</div><div class="flow-arrow">→</div>
+      <div class="flow-node">Human Label</div><div class="flow-arrow">→</div>
+      <div class="flow-node hi">Holdout Set</div>
+    </div>
+    <p style="font-size:13px;color:var(--muted);">A holdout set sampled from real production traffic is the most representative offline evaluation. It captures the actual query distribution your users send — not the distribution you imagined when designing the training set.</p>
+  </div>
+
+  <div id="off-golden" class="tab-panel">
+    <div class="flow">
+      <div class="flow-node hi">Curated Examples</div><div class="flow-arrow">→</div>
+      <div class="flow-node">Known Hard Cases</div><div class="flow-arrow">→</div>
+      <div class="flow-node">Edge Cases</div><div class="flow-arrow">→</div>
+      <div class="flow-node">Regression Cases</div><div class="flow-arrow">→</div>
+      <div class="flow-node hi">Golden Set (100-500)</div>
+    </div>
+    <p style="font-size:13px;color:var(--muted);">A small, hand-curated set of the most important and most difficult cases. Every model change is tested against this. It grows over time by adding every production bug found. This is your regression test suite for model quality.</p>
+  </div>
+
+  <div class="divider"></div>
+
+  <p style="font-size:13px;font-weight:600;margin-bottom:0.75rem;">Metrics by task type</p>
+  <table class="scale-table">
+    <thead><tr><th>Task Type</th><th>Primary Metric</th><th>Secondary Metrics</th></tr></thead>
+    <tbody>
+      <tr><td>Binary Classification</td><td>F1 Score</td><td>AUC-ROC, Precision, Recall</td></tr>
+      <tr><td>Multi-class</td><td>Macro F1</td><td>Confusion matrix, Per-class F1</td></tr>
+      <tr><td>Regression</td><td>RMSE</td><td>MAE, R², Residual plots</td></tr>
+      <tr><td>Ranking / Retrieval</td><td>NDCG@K</td><td>MRR, Precision@K, Recall@K</td></tr>
+      <tr><td>Text generation</td><td>Custom LLM-judge</td><td>BLEU (MT), ROUGE (summary)</td></tr>
+      <tr><td>RAG systems</td><td>RAGAS suite</td><td>Faithfulness, Relevance, Recall</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- SECTION 3: RAGAS -->
+<section class="section">
+  <div class="section-label">Section 03</div>
+  <h2>RAG evaluation with RAGAS</h2>
+  <p class="section-intro">RAGAS (Retrieval Augmented Generation Assessment) provides 6 automated metrics for evaluating RAG pipelines without requiring ground-truth labels for every response. Click a metric to expand it.</p>
+
+  <div class="ragas-grid">
+    <div class="ragas-card" onclick="toggleRagas(this)">
+      <div class="rc-header"><span class="rc-name">Faithfulness</span><span class="rc-score">Target: &gt;0.85</span></div>
+      <div class="rc-desc">Are all claims in the answer supported by the retrieved context?</div>
+      <div class="rc-detail">
+        <p>Measures whether the generated answer contains only information that can be directly inferred from the provided context. Hallucinated facts score 0 on this metric.</p>
+        <div class="formula">score = supported_claims / total_claims</div>
+        <p style="margin-top:0.75rem;"><strong style="color:var(--text)">If low:</strong> Improve chunking to include more complete context, or reduce temperature.</p>
+      </div>
+    </div>
+    <div class="ragas-card" onclick="toggleRagas(this)">
+      <div class="rc-header"><span class="rc-name">Answer Relevance</span><span class="rc-score">Target: &gt;0.80</span></div>
+      <div class="rc-desc">How directly does the answer address the original question?</div>
+      <div class="rc-detail">
+        <p>Uses an LLM to generate hypothetical questions from the answer, then measures cosine similarity between those and the original question. A tangential answer scores low.</p>
+        <div class="formula">score = mean_cosine_sim(generated_questions, original_question)</div>
+        <p style="margin-top:0.75rem;"><strong style="color:var(--text)">If low:</strong> Refine the generation prompt to stay focused on the question.</p>
+      </div>
+    </div>
+    <div class="ragas-card" onclick="toggleRagas(this)">
+      <div class="rc-header"><span class="rc-name">Context Recall</span><span class="rc-score">Target: &gt;0.75</span></div>
+      <div class="rc-desc">Did retrieval fetch all the documents needed to answer correctly?</div>
+      <div class="rc-detail">
+        <p>Requires ground-truth answers. Checks what fraction of the sentences in the ground-truth answer can be attributed to the retrieved context. Measures retrieval completeness.</p>
+        <div class="formula">score = GT_sentences_in_context / total_GT_sentences</div>
+        <p style="margin-top:0.75rem;"><strong style="color:var(--text)">If low:</strong> Increase K (top-K docs), improve chunking, or use a re-ranker.</p>
+      </div>
+    </div>
+    <div class="ragas-card" onclick="toggleRagas(this)">
+      <div class="rc-header"><span class="rc-name">Context Precision</span><span class="rc-score">Target: &gt;0.70</span></div>
+      <div class="rc-desc">How much of the retrieved context is actually relevant?</div>
+      <div class="rc-detail">
+        <p>Measures the signal-to-noise ratio of your retrieval. If you fetch 5 docs but only 1 is relevant, precision is 0.2. High noise increases LLM confusion and token cost.</p>
+        <div class="formula">score = relevant_chunks_retrieved / total_chunks_retrieved</div>
+        <p style="margin-top:0.75rem;"><strong style="color:var(--text)">If low:</strong> Use a re-ranker, reduce K, or improve your embedding model.</p>
+      </div>
+    </div>
+    <div class="ragas-card" onclick="toggleRagas(this)">
+      <div class="rc-header"><span class="rc-name">Answer Correctness</span><span class="rc-score">Target: &gt;0.75</span></div>
+      <div class="rc-desc">Is the answer factually and semantically correct vs ground truth?</div>
+      <div class="rc-detail">
+        <p>Combines factual overlap (F1 on extracted claims) with semantic similarity to a reference answer. Requires labelled ground-truth answers. The most direct quality measure.</p>
+        <div class="formula">score = 0.75 * factual_F1 + 0.25 * semantic_sim</div>
+        <p style="margin-top:0.75rem;"><strong style="color:var(--text)">If low:</strong> Check all other metrics first — correctness is a downstream symptom.</p>
+      </div>
+    </div>
+    <div class="ragas-card" onclick="toggleRagas(this)">
+      <div class="rc-header"><span class="rc-name">Answer Similarity</span><span class="rc-score">Target: &gt;0.80</span></div>
+      <div class="rc-desc">How semantically similar is the answer to the ground-truth answer?</div>
+      <div class="rc-detail">
+        <p>Pure embedding-based cosine similarity between the generated answer and the reference. Captures paraphrase and semantic equivalence, not just exact token overlap like BLEU.</p>
+        <div class="formula">score = cosine_sim(embed(answer), embed(reference))</div>
+        <p style="margin-top:0.75rem;"><strong style="color:var(--text)">If low:</strong> The model may be answering correctly but in a very different style — check human eval.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="code-block" style="margin-top:1.5rem;"><span class="cc"># RAGAS evaluation setup</span>
+<span class="ck">from</span> ragas <span class="ck">import</span> evaluate
+<span class="ck">from</span> ragas.metrics <span class="ck">import</span> (faithfulness, answer_relevancy,
+    context_recall, context_precision)
+<span class="ck">from</span> datasets <span class="ck">import</span> Dataset
+
+data = {
+    <span class="cs">"question"</span>: [<span class="cs">"What is RAG?"</span>],
+    <span class="cs">"answer"</span>: [<span class="cs">"RAG combines retrieval with generation..."</span>],
+    <span class="cs">"contexts"</span>: [[<span class="cs">"RAG stands for Retrieval-Augmented Generation..."</span>]],
+    <span class="cs">"ground_truth"</span>: [<span class="cs">"Retrieval-Augmented Generation is a technique..."</span>]
+}
+result = <span class="cf">evaluate</span>(Dataset.<span class="cf">from_dict</span>(data),
+    metrics=[faithfulness, answer_relevancy, context_recall, context_precision])
+<span class="cf">print</span>(result)  <span class="cc"># {'faithfulness': 0.92, 'answer_relevancy': 0.87, ...}</span></div>
+</section>
+
+<!-- SECTION 4: LLM-as-Judge -->
+<section class="section">
+  <div class="section-label">Section 04</div>
+  <h2>LLM-as-Judge — using an LLM to evaluate LLM outputs</h2>
+  <p class="section-intro">When there is no ground truth and human annotation is too expensive, an LLM can serve as a scalable judge. It requires careful calibration.</p>
+
+  <div class="flow">
+    <div class="flow-node hi">Question + Answer</div><div class="flow-arrow">→</div>
+    <div class="flow-node hi">Judge LLM (e.g. GPT-4)</div><div class="flow-arrow">→</div>
+    <div class="flow-node hi">Score 1–5</div><div class="flow-arrow">+</div>
+    <div class="flow-node hi">Reasoning</div>
+  </div>
+
+  <div class="card-grid" style="margin-top:1.5rem;">
+    <div class="card">
+      <h3>When to use</h3>
+      <p>No ground-truth labels exist. Subjective quality (helpfulness, clarity, safety) matters. You have budget for a strong judge model (GPT-4o or Claude Opus) at evaluation time.</p>
+    </div>
+    <div class="card">
+      <h3>Prompt design for judges</h3>
+      <p>Always include a rubric with anchor examples for each score. Specify exactly what to measure. Avoid vague instructions like "evaluate quality" — define quality explicitly.</p>
+    </div>
+    <div class="card">
+      <h3>Calibrate against humans</h3>
+      <p>Run 100-200 examples through both the LLM judge and human annotators. Report Spearman correlation and Cohen's kappa. A good judge model achieves r &gt; 0.8 correlation with experts.</p>
+    </div>
+    <div class="card">
+      <h3>Biases to watch for</h3>
+      <p>Position bias (prefers first answer), verbosity bias (prefers longer answers), self-enhancement bias (prefers its own provider's outputs). Mitigate with randomised ordering and multi-judge averaging.</p>
+    </div>
+  </div>
+
+  <div class="code-block" style="margin-top:1.5rem;"><span class="cc"># LLM-as-Judge prompt template</span>
+JUDGE_PROMPT = <span class="cs">"""You are evaluating an AI assistant response.
+Question: {question}
+Response: {response}
+
+Rate the response on HELPFULNESS (1-5):
+1 = Does not address the question
+3 = Partially addresses with minor errors
+5 = Fully addresses, accurate, well-explained
+
+Output JSON only: {{"score": &lt;1-5&gt;, "reasoning": "&lt;1-2 sentences&gt;"}}
+"""</span>
+
+<span class="ck">def</span> <span class="cf">judge_response</span>(question, response, judge_llm):
+    prompt = JUDGE_PROMPT.<span class="cf">format</span>(question=question, response=response)
+    result = judge_llm.<span class="cf">generate</span>(prompt)
+    <span class="ck">return</span> json.<span class="cf">loads</span>(result)</div>
+</section>
+
+<!-- SECTION 5: Online evaluation -->
+<section class="section">
+  <div class="section-label">Section 05</div>
+  <h2>Online evaluation — A/B testing in production</h2>
+  <p class="section-intro">The only way to measure true business impact. Use progressive deployment strategies to manage risk.</p>
+
+  <div class="flow">
+    <div class="flow-node hi">Traffic Split</div><div class="flow-arrow">→</div>
+    <div class="flow-node">Model A (control)</div><div class="flow-arrow">vs</div>
+    <div class="flow-node">Model B (treatment)</div><div class="flow-arrow">→</div>
+    <div class="flow-node hi">Collect Metrics</div><div class="flow-arrow">→</div>
+    <div class="flow-node hi">Stat Significance</div><div class="flow-arrow">→</div>
+    <div class="flow-node hi">Decision</div>
+  </div>
+
+  <div style="margin:1.5rem 0;">
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px;">
+      <span>Model A (50%)</span><span>Model B (50%)</span>
+    </div>
+    <div class="traffic-bar">
+      <div class="traffic-a" style="width:50%"></div>
+      <div class="traffic-b" style="width:50%"></div>
+    </div>
+  </div>
+
+  <div class="card-grid">
+    <div class="card">
+      <div style="font-size:1.5rem;margin-bottom:0.5rem;">👻</div>
+      <h3>Shadow Mode</h3>
+      <p>New model runs on every request but its response is discarded. Zero user impact. Collects latency, error rates, and outputs for offline comparison before any live traffic.</p>
+      <span class="tag" style="background:rgba(99,102,241,0.12);color:#a5b4fc">0% live traffic</span>
+    </div>
+    <div class="card">
+      <div style="font-size:1.5rem;margin-bottom:0.5rem;">🐦</div>
+      <h3>Canary Deployment</h3>
+      <p>Send 1-5% of real traffic to the new model. Monitor error rates, latency, and implicit signals (click-through, session length) before full rollout.</p>
+      <span class="tag" style="background:rgba(34,211,238,0.12);color:var(--accent2)">1–5% live traffic</span>
+    </div>
+    <div class="card">
+      <div style="font-size:1.5rem;margin-bottom:0.5rem;">⚖️</div>
+      <h3>Full A/B Test</h3>
+      <p>50/50 split for statistical power. Run until you have 95% confidence (typically 1,000-10,000 samples per arm depending on effect size). Use a two-proportion z-test.</p>
+      <span class="tag" style="background:rgba(16,185,129,0.12);color:var(--green)">50% live traffic</span>
+    </div>
+    <div class="card">
+      <div style="font-size:1.5rem;margin-bottom:0.5rem;">🎰</div>
+      <h3>Multi-armed Bandit</h3>
+      <p>Automatically routes more traffic to the better-performing variant. Reduces regret by exploiting good options faster, but makes it harder to interpret statistical results cleanly.</p>
+      <span class="tag" style="background:rgba(245,158,11,0.12);color:var(--accent3)">Dynamic allocation</span>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 6: Human evaluation -->
+<section class="section">
+  <div class="section-label">Section 06</div>
+  <h2>Human evaluation — when machines can't judge</h2>
+  <p class="section-intro">Human evaluation is expensive but remains the ground truth for subjective quality. Use it strategically.</p>
+
+  <div class="card-grid">
+    <div class="card">
+      <h3>When to use human eval</h3>
+      <p>Automated metrics don't capture what users care about. New task type with no established benchmark. Calibrating LLM-as-Judge. Regulatory or safety requirements demand it.</p>
+    </div>
+    <div class="card">
+      <h3>Annotation guidelines</h3>
+      <p>Write a detailed rubric with 5+ anchor examples before annotation starts. Bad guidelines produce noisy labels that are worse than no labels. Pilot with 50 examples before full run.</p>
+    </div>
+    <div class="card">
+      <h3>Inter-annotator agreement</h3>
+      <p>Measure Cohen's kappa or Fleiss' kappa across annotators. Below 0.6 = unreliable labels. Fix guidelines, not annotators. Always use at least 2 annotators per example.</p>
+    </div>
+    <div class="card">
+      <h3>Cost vs quality tradeoffs</h3>
+      <p>Expert annotators: $50-200/hr, slow but high quality. Crowdsource: $0.05-0.20/task, fast but noisy. For production: use experts to calibrate, crowd to scale, LLM judge to run daily.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 7: Anti-patterns -->
+<section class="section">
+  <div class="section-label">Section 07</div>
+  <h2>Evaluation anti-patterns to avoid</h2>
+  <p class="section-intro">Common mistakes that create a false sense of confidence in model quality.</p>
+
+  <div class="card-grid">
+    <div class="anti-card">
+      <span class="tag" style="background:rgba(244,63,94,0.15);color:var(--red);margin-bottom:0.5rem;">Anti-pattern</span>
+      <h3>Only measuring accuracy</h3>
+      <p>Accuracy hides class imbalance failures. A model that always predicts the majority class can have 95% accuracy on an imbalanced dataset. Always use F1, AUC-ROC, or confusion matrix.</p>
+    </div>
+    <div class="anti-card">
+      <span class="tag" style="background:rgba(244,63,94,0.15);color:var(--red);margin-bottom:0.5rem;">Anti-pattern</span>
+      <h3>No production monitoring</h3>
+      <p>Models degrade silently as data distributions shift. You need continuous monitoring of input distributions, output distributions, and downstream business metrics — not just launch-time eval.</p>
+    </div>
+    <div class="anti-card">
+      <span class="tag" style="background:rgba(244,63,94,0.15);color:var(--red);margin-bottom:0.5rem;">Anti-pattern</span>
+      <h3>Overfitting to benchmarks</h3>
+      <p>Optimising exclusively for benchmark scores produces models that score well but fail in production. Benchmarks are proxies. Always maintain a holdout that the team cannot see during development.</p>
+    </div>
+    <div class="anti-card">
+      <span class="tag" style="background:rgba(244,63,94,0.15);color:var(--red);margin-bottom:0.5rem;">Anti-pattern</span>
+      <h3>Ignoring latency as a metric</h3>
+      <p>A model with p99 latency of 10 seconds fails users even if accuracy is perfect. Track latency percentiles (p50, p95, p99) alongside quality metrics from day one.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 8: End-to-end pipeline -->
+<section class="section">
+  <div class="section-label">Section 08</div>
+  <h2>End-to-end evaluation pipeline</h2>
+  <p class="section-intro">How all three evaluation types connect in a production ML system.</p>
+
+  <div class="answer-box">
+    <p><strong style="color:var(--text)">Phase 1 — Offline (pre-deploy).</strong> Build a golden test set of 100-500 curated examples. Run automated metrics (task-appropriate: F1, RAGAS, custom LLM-judge). Only move to Phase 2 if all metrics exceed thresholds.</p>
+    <p><strong style="color:var(--text)">Phase 2 — Shadow mode.</strong> Run new model in parallel for 24-72 hours on real traffic. Compare output distributions, latency, and error rates with no user impact. Identify surprises before any live exposure.</p>
+    <p><strong style="color:var(--text)">Phase 3 — Canary (1-5%).</strong> Expose a small fraction of real users. Monitor implicit feedback signals: task completion rate, re-query rate, session length. Run for 48-72 hours minimum.</p>
+    <p><strong style="color:var(--text)">Phase 4 — Full A/B test.</strong> 50/50 split until statistical significance (95% confidence). Primary metric is the business metric you care about, not the ML metric. Kill switch if error rate spikes.</p>
+    <p><strong style="color:var(--text)">Phase 5 — Production monitoring.</strong> Never stop evaluating. Track input distribution drift (KL divergence), output quality drift, and business metrics weekly. Trigger re-evaluation if any signal degrades by &gt;5%.</p>
+  </div>
+
+  <div class="code-block" style="margin-top:1.5rem;"><span class="cc"># Minimal eval pipeline skeleton</span>
+<span class="ck">class</span> <span class="cf">EvalPipeline</span>:
+    <span class="ck">def</span> <span class="cf">__init__</span>(self, model, golden_set, metrics):
+        self.model = model
+        self.golden_set = golden_set
+        self.metrics = metrics
+
+    <span class="ck">def</span> <span class="cf">run_offline</span>(self) <span class="ck">-></span> dict:
+        preds = [self.model.<span class="cf">generate</span>(q) <span class="ck">for</span> q <span class="ck">in</span> self.golden_set[<span class="cs">"questions"</span>]]
+        <span class="ck">return</span> {m.<span class="cf">__name__</span>: m.<span class="cf">score</span>(preds, self.golden_set[<span class="cs">"answers"</span>])
+                <span class="ck">for</span> m <span class="ck">in</span> self.metrics}
+
+    <span class="ck">def</span> <span class="cf">check_thresholds</span>(self, results, thresholds) <span class="ck">-></span> bool:
+        <span class="ck">return</span> <span class="cf">all</span>(results[k] >= v <span class="ck">for</span> k, v <span class="ck">in</span> thresholds.<span class="cf">items</span>())
+
+    <span class="ck">def</span> <span class="cf">should_deploy</span>(self) <span class="ck">-></span> bool:
+        results = self.<span class="cf">run_offline</span>()
+        thresholds = {<span class="cs">"faithfulness"</span>: <span class="cn">0.85</span>, <span class="cs">"answer_relevancy"</span>: <span class="cn">0.80</span>}
+        <span class="ck">return</span> self.<span class="cf">check_thresholds</span>(results, thresholds)</div>
+</section>
+
+<footer>
+  <span>Kuldeep Rao</span> · ML Model Evaluation
+</footer>
+
+<script>
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.section').forEach(s => observer.observe(s));
+
+function switchTabLocal(btn, id) {
+  const controls = btn.closest('.tab-controls');
+  const container = controls.nextElementSibling;
+  controls.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  // find all sibling tab panels
+  let el = controls.nextElementSibling;
+  while (el && el.classList.contains('tab-panel')) {
+    el.classList.remove('active');
+    el = el.nextElementSibling;
+  }
+  document.getElementById(id).classList.add('active');
+}
+
+function toggleRagas(card) {
+  const wasExpanded = card.classList.contains('expanded');
+  // collapse all
+  document.querySelectorAll('.ragas-card').forEach(c => c.classList.remove('expanded'));
+  if (!wasExpanded) card.classList.add('expanded');
+}
+</script>
+</body>
+</html>

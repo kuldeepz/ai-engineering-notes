@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Model Drift Monitoring — Production ML Observability</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+:root{--bg:#0f1117;--bg2:#161b27;--bg3:#1e2535;--border:rgba(255,255,255,0.08);--text:#e2e8f0;--muted:#8892a4;--accent:#6366f1;--accent2:#22d3ee;--accent3:#f59e0b;--green:#10b981;--red:#f43f5e;--purple:#a78bfa;--font:'Inter',sans-serif;--mono:'JetBrains Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.7;overflow-x:hidden}
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4rem 2rem;position:relative;overflow:hidden}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(34,211,238,0.06) 1px,transparent 1px),linear-gradient(90deg,rgba(34,211,238,0.06) 1px,transparent 1px);background-size:48px 48px;mask-image:radial-gradient(ellipse at center,black 30%,transparent 80%)}
+.hero-glow{position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(34,211,238,0.1) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(34,211,238,0.1);border:1px solid rgba(34,211,238,0.25);border-radius:100px;padding:6px 16px;font-size:12px;font-weight:500;color:#67e8f9;margin-bottom:2rem;letter-spacing:0.05em;text-transform:uppercase}
+.hero h1{font-size:clamp(2.5rem,6vw,4.5rem);font-weight:600;letter-spacing:-0.03em;line-height:1.1;margin-bottom:1.5rem;position:relative}
+.hero h1 span{background:linear-gradient(135deg,#22d3ee,#6366f1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero p{font-size:1.15rem;color:var(--muted);max-width:620px;margin-bottom:3rem;position:relative}
+.hero-stats{display:flex;gap:3rem;position:relative;flex-wrap:wrap;justify-content:center}
+.stat{text-align:center}.stat-num{font-size:2rem;font-weight:600;color:var(--accent2);font-family:var(--mono)}.stat-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em}
+.scroll-hint{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);color:var(--muted);font-size:12px;display:flex;flex-direction:column;align-items:center;gap:8px;animation:bounce 2s ease-in-out infinite}
+@keyframes bounce{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(8px)}}
+.section{max-width:960px;margin:0 auto;padding:5rem 2rem;opacity:0;transform:translateY(30px);transition:opacity 0.6s ease,transform 0.6s ease}
+.section.visible{opacity:1;transform:translateY(0)}
+.section-label{font-size:11px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent2);margin-bottom:0.75rem}
+.section h2{font-size:clamp(1.6rem,3vw,2.2rem);font-weight:600;letter-spacing:-0.02em;margin-bottom:1rem;line-height:1.2}
+.section-intro{color:var(--muted);font-size:1.05rem;max-width:700px;margin-bottom:3rem}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1.5rem;transition:border-color 0.2s,transform 0.2s}
+.card:hover{border-color:rgba(34,211,238,0.25);transform:translateY(-2px)}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem}
+.card-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:1rem}
+.card h3{font-size:1rem;font-weight:600;margin-bottom:0.5rem}.card p{font-size:13px;color:var(--muted);line-height:1.6}
+.tag{display:inline-block;font-size:11px;font-weight:500;padding:3px 10px;border-radius:100px;margin-top:0.75rem}
+.tab-controls{display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1.5rem;border-bottom:1px solid var(--border);padding-bottom:1rem}
+.tab-btn{padding:8px 18px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--muted);font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.2s}
+.tab-btn.active{background:rgba(34,211,238,0.1);border-color:rgba(34,211,238,0.25);color:#67e8f9}
+.tab-btn:hover:not(.active){color:var(--text)}
+.tab-panel{display:none;animation:fadeIn 0.3s ease}.tab-panel.active{display:block}
+.flow{display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin:1.5rem 0}
+.flow-node{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.6rem 1rem;font-size:12px;font-weight:500;text-align:center;min-width:90px;line-height:1.4}
+.flow-arrow{color:var(--muted);font-size:16px;flex-shrink:0}
+.flow-node.hi{background:rgba(34,211,238,0.08);border-color:rgba(34,211,238,0.3);color:#67e8f9}
+.scale-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:1.5rem}
+.scale-table th{text-align:left;padding:10px 16px;background:var(--bg3);color:var(--muted);font-weight:500;font-size:11px;letter-spacing:0.08em;text-transform:uppercase}
+.scale-table th:first-child{border-radius:8px 0 0 8px}.scale-table th:last-child{border-radius:0 8px 8px 0}
+.scale-table td{padding:12px 16px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.6}
+.scale-table tr:last-child td{border-bottom:none}.scale-table tr:hover td{background:rgba(255,255,255,0.02)}
+.answer-box{background:linear-gradient(135deg,rgba(34,211,238,0.07),rgba(99,102,241,0.05));border:1px solid rgba(34,211,238,0.2);border-radius:16px;padding:2rem;margin-top:2rem}
+.answer-box p{font-size:14px;color:var(--muted);line-height:1.9}.answer-box p+p{margin-top:0.75rem}
+.code-block{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:1.25rem 1.5rem;font-family:var(--mono);font-size:12px;line-height:1.8;overflow-x:auto;margin-top:1rem}
+.cc{color:#6b7280}.ck{color:#a78bfa}.cs{color:#34d399}.cf{color:#60a5fa}.cn{color:#f59e0b}
+.badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:500}
+.divider{width:100%;height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:1.5rem 0}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:3px}
+/* drift era cards */
+.era-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-top:1.5rem}
+.era-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1.25rem;cursor:pointer;transition:all 0.2s}
+.era-card.selected{border-color:rgba(34,211,238,0.4);background:rgba(34,211,238,0.05)}
+.era-card h4{font-size:13px;font-weight:600;margin-bottom:0.35rem}
+.era-card .era-sub{font-size:11px;color:var(--muted)}
+.era-detail{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-top:1rem;display:none;animation:fadeIn 0.3s ease}
+.era-detail.visible{display:block}
+/* decision tree */
+.dtree{margin:1.5rem 0}
+.dtree-node{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:0.75rem 1.25rem;font-size:13px;display:inline-block;position:relative}
+.dtree-q{background:rgba(99,102,241,0.1);border-color:rgba(99,102,241,0.3);color:#a5b4fc;font-weight:600}
+.dtree-yes{background:rgba(16,185,129,0.08);border-color:rgba(16,185,129,0.3);color:#34d399}
+.dtree-no{background:rgba(244,63,94,0.08);border-color:rgba(244,63,94,0.3);color:#f43f5e}
+.dtree-row{display:flex;align-items:flex-start;gap:1rem;flex-wrap:wrap;margin:0.5rem 0}
+.dtree-label{font-size:11px;color:var(--muted);padding:0 0.5rem;align-self:center}
+/* metric cards */
+.metric-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.25rem;display:flex;align-items:center;gap:1rem}
+.metric-icon{font-size:28px;flex-shrink:0}
+.metric-name{font-size:13px;font-weight:600;margin-bottom:2px}
+.metric-desc{font-size:11px;color:var(--muted);line-height:1.5}
+.metric-threshold{font-size:11px;font-family:var(--mono);margin-top:6px;color:var(--accent3)}
+footer{text-align:center;padding:3rem 2rem;color:var(--muted);font-size:13px;border-top:1px solid var(--border)}
+footer span{color:var(--accent2);font-weight:500}
+@media(max-width:640px){.hero-stats{gap:1.5rem}.flow{flex-direction:column}.flow-arrow{transform:rotate(90deg)}.tab-btn{padding:6px 12px;font-size:12px}.dtree-row{flex-direction:column}}
+@media(prefers-reduced-motion:reduce){*,.section{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-badge">MLOps · Drift · Monitoring · Production</div>
+  <h1>Model Drift<br><span>Monitoring</span></h1>
+  <p>Production ML Observability — detect, measure, and respond to distribution shifts before they silently degrade your models.</p>
+  <div class="hero-stats">
+    <div class="stat"><div class="stat-num">3</div><div class="stat-label">Drift Types</div></div>
+    <div class="stat"><div class="stat-num">5</div><div class="stat-label">Detection Methods</div></div>
+    <div class="stat"><div class="stat-num">2</div><div class="stat-label">Response Strategies</div></div>
+    <div class="stat"><div class="stat-num">24/7</div><div class="stat-label">Monitoring</div></div>
+  </div>
+  <div class="scroll-hint"><span>scroll</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg></div>
+</section>
+
+<!-- Section 1: Foundation -->
+<div class="section">
+  <div class="section-label">01 — Foundation</div>
+  <h2>What is model drift and why does production ML degrade?</h2>
+  <p class="section-intro">A model trained on last year's data is already becoming wrong. The world changes — inputs shift, relationships change, labels evolve. Drift is silent and cumulative.</p>
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-icon" style="background:rgba(99,102,241,0.15)">📊</div>
+      <h3>Data Drift</h3>
+      <p>The statistical distribution of input features changes over time. The model was trained on one distribution but now sees a different one. Predictions may technically run, but quality quietly erodes.</p>
+      <p style="margin-top:0.5rem;font-size:12px;color:var(--accent3)">Example: ticket language shifts after a product launch introduces new terminology the model never saw.</p>
+      <span class="tag" style="background:rgba(99,102,241,0.15);color:#a5b4fc">P(X) changes</span>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(34,211,238,0.1)">🔄</div>
+      <h3>Concept Drift</h3>
+      <p>The relationship between inputs and the target label changes. The model's learned mapping no longer reflects reality — even if inputs look the same, the correct output is now different.</p>
+      <p style="margin-top:0.5rem;font-size:12px;color:var(--accent3)">Example: "network down" tickets used to mean P1 but after a network upgrade, most are now P3 routine maintenance.</p>
+      <span class="tag" style="background:rgba(34,211,238,0.1);color:#22d3ee">P(Y|X) changes</span>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(16,185,129,0.1)">📉</div>
+      <h3>Prediction Drift</h3>
+      <p>The distribution of the model's output scores or labels changes, even if you can't observe true labels. A useful leading indicator — visible immediately without waiting for ground truth.</p>
+      <p style="margin-top:0.5rem;font-size:12px;color:var(--accent3)">Example: P1 prediction rate drops from 15% to 3% after a holiday period with different incident patterns.</p>
+      <span class="tag" style="background:rgba(16,185,129,0.1);color:#10b981">P(Ŷ) changes</span>
+    </div>
+  </div>
+</div>
+
+<!-- Section 2: Types of Drift -->
+<div class="section">
+  <div class="section-label">02 — Drift Taxonomy</div>
+  <h2>Four drift types — click each to understand</h2>
+  <p class="section-intro">Not all drift is equal. Different types require different detection strategies and have different urgency levels. Click a card to expand details.</p>
+
+  <div class="era-grid">
+    <div class="era-card selected" id="drift-data" onclick="selectDrift('data', this)">
+      <h4>Data Drift</h4>
+      <div class="era-sub">Input distribution P(X)</div>
+    </div>
+    <div class="era-card" id="drift-concept" onclick="selectDrift('concept', this)">
+      <h4>Concept Drift</h4>
+      <div class="era-sub">Label relationship P(Y|X)</div>
+    </div>
+    <div class="era-card" id="drift-label" onclick="selectDrift('label', this)">
+      <h4>Label Drift</h4>
+      <div class="era-sub">Output distribution P(Y)</div>
+    </div>
+    <div class="era-card" id="drift-infra" onclick="selectDrift('infra', this)">
+      <h4>Infrastructure Drift</h4>
+      <div class="era-sub">Pipeline behavior change</div>
+    </div>
+  </div>
+
+  <div id="drift-detail" class="era-detail visible">
+    <div id="drift-detail-content">
+      <strong style="color:var(--accent2)">Data Drift</strong><br>
+      <span style="font-size:13px;color:var(--muted)">Feature distributions shift over time. Word frequencies change, numeric ranges widen, new categorical values appear. The model inputs no longer resemble training data, so confidence scores become unreliable.<br><br>
+      <strong style="color:var(--text)">ITSM example:</strong> After a major cloud migration, ticket descriptions reference new cloud-native error codes that appeared 0 times in training data. The NLP model has no embeddings for these terms and defaults to the majority class.<br><br>
+      <strong style="color:var(--text)">Detection:</strong> PSI on numerical features, chi-square on categoricals, embedding distance for text. Threshold: PSI > 0.2 triggers alert.</span>
+    </div>
+  </div>
+</div>
+
+<!-- Section 3: Detection Methods -->
+<div class="section">
+  <div class="section-label">03 — Detection Methods</div>
+  <h2>How to detect drift statistically — click each</h2>
+  <p class="section-intro">No single test catches all drift types. A production pipeline should run multiple complementary tests on each monitoring window.</p>
+
+  <div class="tab-controls">
+    <button class="tab-btn active" onclick="switchTab('det-psi', this)">PSI</button>
+    <button class="tab-btn" onclick="switchTab('det-ks', this)">KS Test</button>
+    <button class="tab-btn" onclick="switchTab('det-chi', this)">Chi-Square</button>
+    <button class="tab-btn" onclick="switchTab('det-fi', this)">Feature Importance</button>
+    <button class="tab-btn" onclick="switchTab('det-pred', this)">Prediction Dist.</button>
+  </div>
+
+  <div id="det-psi" class="tab-panel active">
+    <div class="card">
+      <h3>PSI — Population Stability Index</h3>
+      <p style="margin-top:0.5rem;color:var(--muted);font-size:13px">Measures how much a numerical feature's distribution has shifted between a reference (training) window and a current production window. Originally from credit risk monitoring.</p>
+      <div class="divider"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;font-size:12px">
+        <div>
+          <div style="color:var(--accent2);font-weight:600;margin-bottom:8px">How it works</div>
+          <div style="color:var(--muted)">Bin both distributions into 10–20 equal-width or equal-frequency buckets. For each bucket: PSI_i = (Actual% − Expected%) × ln(Actual%/Expected%). Sum across all buckets.</div>
+        </div>
+        <div>
+          <div style="color:var(--accent2);font-weight:600;margin-bottom:8px">Thresholds</div>
+          <div style="color:var(--muted)">PSI &lt; 0.1 → No action<br>0.1 ≤ PSI &lt; 0.2 → Investigate<br>PSI ≥ 0.2 → Significant drift, retrain<br><br>Works best for numerical features with clear distributions.</div>
+        </div>
+      </div>
+      <div class="code-block">
+<span class="ck">def</span> <span class="cf">compute_psi</span>(expected, actual, buckets=<span class="cn">10</span>):
+    bins = <span class="cf">np.percentile</span>(expected, <span class="cf">np.linspace</span>(<span class="cn">0</span>, <span class="cn">100</span>, buckets+<span class="cn">1</span>))
+    exp_freq = <span class="cf">np.histogram</span>(expected, bins=bins)[<span class="cn">0</span>] / <span class="cf">len</span>(expected)
+    act_freq = <span class="cf">np.histogram</span>(actual, bins=bins)[<span class="cn">0</span>] / <span class="cf">len</span>(actual)
+    exp_freq = <span class="cf">np.clip</span>(exp_freq, <span class="cn">1e-6</span>, <span class="cn">None</span>)
+    act_freq = <span class="cf">np.clip</span>(act_freq, <span class="cn">1e-6</span>, <span class="cn">None</span>)
+    <span class="ck">return</span> <span class="cf">np.sum</span>((act_freq - exp_freq) * <span class="cf">np.log</span>(act_freq / exp_freq))
+      </div>
+    </div>
+  </div>
+
+  <div id="det-ks" class="tab-panel">
+    <div class="card">
+      <h3>Kolmogorov-Smirnov (KS) Test</h3>
+      <p style="margin-top:0.5rem;color:var(--muted);font-size:13px">A non-parametric test that measures the maximum difference between two empirical cumulative distribution functions (CDFs). Sensitive to both shift and shape changes.</p>
+      <div class="divider"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;font-size:12px">
+        <div>
+          <div style="color:var(--accent2);font-weight:600;margin-bottom:8px">How it works</div>
+          <div style="color:var(--muted)">D = max|F1(x) − F2(x)| over all x. Returns a statistic D and a p-value. Large D and small p-value means the distributions are significantly different.</div>
+        </div>
+        <div>
+          <div style="color:var(--accent2);font-weight:600;margin-bottom:8px">Thresholds</div>
+          <div style="color:var(--muted)">p-value &lt; 0.05 → Statistically significant drift<br>D &gt; 0.1 → Practical significance<br><br>Best for continuous numerical features. Requires sufficient sample size (≥ 1000 observations).</div>
+        </div>
+      </div>
+      <div class="code-block">
+<span class="ck">from</span> scipy.stats <span class="ck">import</span> ks_2samp
+
+stat, p_value = <span class="cf">ks_2samp</span>(reference_data, production_data)
+<span class="ck">if</span> p_value &lt; <span class="cn">0.05</span> <span class="ck">and</span> stat &gt; <span class="cn">0.1</span>:
+    <span class="cf">trigger_drift_alert</span>(<span class="cs">"KS"</span>, stat, p_value)
+      </div>
+    </div>
+  </div>
+
+  <div id="det-chi" class="tab-panel">
+    <div class="card">
+      <h3>Chi-Square Test</h3>
+      <p style="margin-top:0.5rem;color:var(--muted);font-size:13px">Tests whether observed categorical frequencies differ significantly from expected (training) frequencies. The go-to test for categorical features like ticket categories, priority levels, or department names.</p>
+      <div class="divider"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;font-size:12px">
+        <div>
+          <div style="color:var(--accent2);font-weight:600;margin-bottom:8px">How it works</div>
+          <div style="color:var(--muted)">χ² = Σ (Observed − Expected)² / Expected. Degrees of freedom = number of categories − 1. Large χ² means the production distribution differs from training.</div>
+        </div>
+        <div>
+          <div style="color:var(--accent2);font-weight:600;margin-bottom:8px">Thresholds</div>
+          <div style="color:var(--muted)">p-value &lt; 0.05 → Alert<br>p-value &lt; 0.001 → Severe drift<br><br>Requires each category to have ≥ 5 expected observations. Merge rare categories before testing.</div>
+        </div>
+      </div>
+      <div class="code-block">
+<span class="ck">from</span> scipy.stats <span class="ck">import</span> chisquare
+
+expected_props = reference_df[<span class="cs">'category'</span>].<span class="cf">value_counts</span>(normalize=<span class="cn">True</span>)
+observed_counts = production_df[<span class="cs">'category'</span>].<span class="cf">value_counts</span>()
+expected_counts = expected_props * <span class="cf">len</span>(production_df)
+
+chi2, p = <span class="cf">chisquare</span>(f_obs=observed_counts, f_exp=expected_counts)
+      </div>
+    </div>
+  </div>
+
+  <div id="det-fi" class="tab-panel">
+    <div class="card">
+      <h3>Feature Importance Shift</h3>
+      <p style="margin-top:0.5rem;color:var(--muted);font-size:13px">Re-measure which features the model relies on most at production time vs training time. A significant ranking change indicates the model is making decisions based on different signals than intended.</p>
+      <div class="divider"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;font-size:12px">
+        <div>
+          <div style="color:var(--accent2);font-weight:600;margin-bottom:8px">How it works</div>
+          <div style="color:var(--muted)">Use SHAP values on a sample of production predictions. Compare the mean absolute SHAP value ranking to training-time rankings. Large rank correlation drop → feature importance drift.</div>
+        </div>
+        <div>
+          <div style="color:var(--accent2);font-weight:600;margin-bottom:8px">Thresholds</div>
+          <div style="color:var(--muted)">Rank correlation (Spearman) &lt; 0.8 → Investigate<br>&lt; 0.6 → Significant shift<br><br>Computationally expensive — run weekly rather than real-time.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="det-pred" class="tab-panel">
+    <div class="card">
+      <h3>Prediction Distribution Monitoring</h3>
+      <p style="margin-top:0.5rem;color:var(--muted);font-size:13px">Monitor the distribution of output scores and predicted labels over time. This requires no ground truth labels and gives the fastest signal — visible within hours of deployment.</p>
+      <div class="divider"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;font-size:12px">
+        <div>
+          <div style="color:var(--accent2);font-weight:600;margin-bottom:8px">What to track</div>
+          <div style="color:var(--muted)">Mean confidence score per window, class frequency ratios, proportion of low-confidence predictions (&lt;0.6), bimodal distribution detection in confidence scores.</div>
+        </div>
+        <div>
+          <div style="color:var(--accent2);font-weight:600;margin-bottom:8px">Thresholds</div>
+          <div style="color:var(--muted)">Mean confidence drops &gt; 0.1 → Alert<br>Class ratio shifts &gt; 20% → Alert<br><br>Use rolling 7-day vs 1-day window comparison for seasonal awareness.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Section 4: Monitoring Pipeline -->
+<div class="section">
+  <div class="section-label">04 — Monitoring Pipeline</div>
+  <h2>The production monitoring architecture</h2>
+  <p class="section-intro">Every prediction is an opportunity to measure drift. A production pipeline logs, tests, alerts, and responds — continuously and automatically.</p>
+
+  <div class="flow">
+    <div class="flow-node hi">Live Predictions</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node hi">Feature Logger</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node hi">Statistical Tests</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node hi">Alert System</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node" style="color:var(--green);border-color:rgba(16,185,129,0.3)">Response</div>
+  </div>
+
+  <div class="card-grid" style="margin-top:1.5rem">
+    <div class="card">
+      <h3>Feature Logger</h3>
+      <p>Log every prediction with its input features, output score, predicted label, timestamp, and model version. Store in a time-series database. Log compression: store summary statistics per 1000 predictions, raw logs for debugging.</p>
+      <span class="tag" style="background:rgba(99,102,241,0.15);color:#a5b4fc">Every prediction</span>
+    </div>
+    <div class="card">
+      <h3>Statistical Tests</h3>
+      <p>Run PSI, KS, chi-square on hourly or daily windows comparing against the training baseline. Schedule on rolling windows to avoid day-of-week seasonality false positives.</p>
+      <span class="tag" style="background:rgba(34,211,238,0.1);color:#22d3ee">Hourly / Daily</span>
+    </div>
+    <div class="card">
+      <h3>Alert Thresholds</h3>
+      <p>Two-tier alerts: yellow (0.1 ≤ PSI &lt; 0.2, p-value 0.05–0.01) triggers investigation; red (PSI ≥ 0.2, p-value &lt; 0.01) triggers automated response. Page on-call for red alerts.</p>
+      <span class="tag" style="background:rgba(245,158,11,0.15);color:#f59e0b">Tiered severity</span>
+    </div>
+    <div class="card">
+      <h3>Response Automation</h3>
+      <p>On red alert: auto-create investigation ticket, freeze model version deployment, notify model owner. On confirmed drift: trigger retraining pipeline or initiate rollback to last stable version.</p>
+      <span class="tag" style="background:rgba(16,185,129,0.1);color:#10b981">Automated triage</span>
+    </div>
+  </div>
+</div>
+
+<!-- Section 5: Response Strategies -->
+<div class="section">
+  <div class="section-label">05 — Response Strategies</div>
+  <h2>What to do when drift is detected</h2>
+  <p class="section-intro">Two fundamentally different responses — retrain when the world has changed, rollback when something broke in the pipeline. Getting this wrong is expensive.</p>
+
+  <div class="dtree">
+    <div style="text-align:center;margin-bottom:1rem">
+      <div class="dtree-node dtree-q">Drift detected — is input data quality degraded?</div>
+    </div>
+    <div class="dtree-row" style="justify-content:center">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:0.5rem">
+        <div class="dtree-label">YES — data pipeline issue</div>
+        <div class="dtree-node dtree-no" style="cursor:default">Rollback to last stable version<br><small style="font-size:11px;opacity:0.8">Fix the pipeline first</small></div>
+      </div>
+      <div style="padding:0 2rem;color:var(--muted);align-self:center;font-size:20px">|</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:0.5rem">
+        <div class="dtree-label">NO — real-world change</div>
+        <div class="dtree-node dtree-q">Is new labeled data available?</div>
+        <div class="dtree-row" style="justify-content:center;margin-top:0.5rem">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:0.5rem">
+            <div class="dtree-label">YES</div>
+            <div class="dtree-node dtree-yes">Retrain on new data<br><small style="font-size:11px;opacity:0.8">Triggered retraining</small></div>
+          </div>
+          <div style="padding:0 1.5rem;color:var(--muted);align-self:center;font-size:20px">|</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:0.5rem">
+            <div class="dtree-label">NO — awaiting labels</div>
+            <div class="dtree-node" style="color:var(--accent3);border-color:rgba(245,158,11,0.3);background:rgba(245,158,11,0.08)">Schedule retraining<br><small style="font-size:11px;opacity:0.8">Weekly cadence</small></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-grid" style="margin-top:2rem">
+    <div class="card">
+      <div class="card-icon" style="background:rgba(16,185,129,0.1)">🔁</div>
+      <h3>Triggered Retraining</h3>
+      <p>A CI/CD pipeline monitors drift metrics. When a threshold is crossed and new labeled data is available, retraining kicks off automatically. New model goes through shadow testing before promotion.</p>
+      <span class="tag" style="background:rgba(16,185,129,0.1);color:#10b981">Event-driven</span>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(99,102,241,0.15)">📅</div>
+      <h3>Scheduled Retraining</h3>
+      <p>Weekly or monthly retraining regardless of detected drift. Simpler ops, predictable cost. Suitable for slowly evolving domains. Combine with triggered approach for critical models.</p>
+      <span class="tag" style="background:rgba(99,102,241,0.15);color:#a5b4fc">Time-based</span>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(244,63,94,0.1)">↩️</div>
+      <h3>Rollback</h3>
+      <p>Immediate revert to a previous model version when a data quality issue or pipeline failure causes sudden performance collapse. Must have versioned model artifacts stored and tested for each deployment.</p>
+      <span class="tag" style="background:rgba(244,63,94,0.1);color:#f43f5e">Emergency</span>
+    </div>
+  </div>
+</div>
+
+<!-- Section 6: Metrics to Track -->
+<div class="section">
+  <div class="section-label">06 — Metrics to Track</div>
+  <h2>Production observability metrics</h2>
+  <p class="section-intro">These are the metrics that surface drift early and confirm model health. Track all of them — each catches different failure modes.</p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem">
+    <div class="metric-card">
+      <div class="metric-icon">📈</div>
+      <div>
+        <div class="metric-name">Prediction Confidence Distribution</div>
+        <div class="metric-desc">Mean and percentile distribution of model output scores per window. Sudden drop in mean confidence is an early drift signal.</div>
+        <div class="metric-threshold">Alert: mean drops &gt; 0.1 vs 7-day baseline</div>
+      </div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-icon">📊</div>
+      <div>
+        <div class="metric-name">Feature Drift Score</div>
+        <div class="metric-desc">PSI or KS statistic per feature, aggregated into a single composite drift score for dashboards. Tracks which features are drifting most.</div>
+        <div class="metric-threshold">Alert: composite PSI &gt; 0.15</div>
+      </div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-icon">✅</div>
+      <div>
+        <div class="metric-name">Label Agreement Rate</div>
+        <div class="metric-desc">When human-labeled ground truth becomes available (e.g., ticket resolution), compare to model prediction. Tracks actual accuracy against reality.</div>
+        <div class="metric-threshold">Alert: agreement drops &gt; 5% vs 30-day baseline</div>
+      </div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-icon">⏱️</div>
+      <div>
+        <div class="metric-name">Inference Latency p95</div>
+        <div class="metric-desc">95th percentile latency per model version. Latency spikes can indicate infrastructure drift — model running on different hardware or with increased payload size.</div>
+        <div class="metric-threshold">Alert: p95 &gt; 2× baseline</div>
+      </div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-icon">❌</div>
+      <div>
+        <div class="metric-name">Prediction Error Rate</div>
+        <div class="metric-desc">Rate of predictions that fail (timeout, exception, or invalid output). Increasing error rate signals infrastructure or input schema drift.</div>
+        <div class="metric-threshold">Alert: error rate &gt; 1% in any 5-min window</div>
+      </div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-icon">🔀</div>
+      <div>
+        <div class="metric-name">Class Frequency Ratio</div>
+        <div class="metric-desc">Ratio of predicted class frequencies vs training class frequencies. Catches label imbalance drift and concept drift simultaneously.</div>
+        <div class="metric-threshold">Alert: any class ratio shifts &gt; 20%</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Section 7: Scale -->
+<div class="section">
+  <div class="section-label">07 — Scale</div>
+  <h2>Drift monitoring at different data volumes</h2>
+  <p class="section-intro">The right monitoring approach depends heavily on prediction volume and acceptable detection lag. Overmoni  toring small models wastes money; undermonitoring large ones causes silent failures.</p>
+
+  <table class="scale-table">
+    <thead>
+      <tr>
+        <th>Volume</th>
+        <th>Window Size</th>
+        <th>Detection Method</th>
+        <th>Infra Approach</th>
+        <th>Typical Lag</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="badge" style="background:rgba(16,185,129,0.15);color:#10b981">Small</span><br><small style="color:var(--muted)">&lt;1k/day</small></td>
+        <td>Weekly batches</td>
+        <td>PSI on key features, manual review</td>
+        <td>Pandas + cron job + email alert</td>
+        <td>7 days</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:rgba(245,158,11,0.15);color:#f59e0b">Medium</span><br><small style="color:var(--muted)">1k–100k/day</small></td>
+        <td>Daily windows</td>
+        <td>PSI + KS + prediction distribution</td>
+        <td>Evidently AI or custom pipeline, Grafana dashboards</td>
+        <td>1–2 days</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:rgba(244,63,94,0.15);color:#f43f5e">Large</span><br><small style="color:var(--muted)">100k–1M/day</small></td>
+        <td>Hourly rolling</td>
+        <td>Full suite + feature importance weekly</td>
+        <td>Kafka stream processing, Prometheus metrics, PagerDuty</td>
+        <td>1–4 hours</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:rgba(167,139,250,0.15);color:#a78bfa">Hyperscale</span><br><small style="color:var(--muted)">&gt;1M/day</small></td>
+        <td>5-min sliding</td>
+        <td>Real-time statistical testing, anomaly ML</td>
+        <td>Dedicated MLOps platform (Arize, WhyLabs), multi-region</td>
+        <td>&lt;15 minutes</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Section 8: End-to-End Guide -->
+<div class="section">
+  <div class="section-label">08 — End-to-End Guide</div>
+  <h2>Complete drift detection pipeline</h2>
+  <p class="section-intro">From prediction logging through statistical testing to automated response — a complete production-grade drift detection system.</p>
+
+  <div class="answer-box">
+    <p><strong style="color:var(--accent2)">Step 1 — Instrument predictions.</strong> Every model inference logs: timestamp, input features (or a hash for PII safety), output score, predicted label, model version, and latency. Write to a time-series store partitioned by date. Enable sampling for very high-volume models (10% sample is sufficient for statistical tests at scale).</p>
+    <p><strong style="color:var(--accent2)">Step 2 — Compute baseline statistics.</strong> At training time, compute and store the reference distribution for every feature: mean, std, percentile bins, and categorical frequencies. Store PSI bin edges alongside the model artifact so tests are reproducible even if training data is deleted.</p>
+    <p><strong style="color:var(--accent2)">Step 3 — Run tests on schedule.</strong> Scheduled job (hourly or daily) pulls the current window, computes PSI and KS for numerical features, chi-square for categoricals, and prediction distribution shift. Emit all scores as metrics. Alert on threshold breach.</p>
+    <p><strong style="color:var(--accent2)">Step 4 — Respond.</strong> Yellow alert → auto-create investigation ticket, tag model owner. Red alert → halt new deployments, notify on-call, run automated data quality checks. If confirmed drift → trigger retraining pipeline with latest N days of labeled data, shadow test new model, promote when performance exceeds incumbent by ≥ 2%.</p>
+  </div>
+
+  <div class="code-block">
+<span class="cc"># Drift detection pipeline — Python pseudocode</span>
+<span class="ck">class</span> <span class="cf">DriftMonitor</span>:
+    <span class="ck">def</span> <span class="cf">__init__</span>(self, reference_stats: dict, thresholds: dict):
+        self.reference = reference_stats
+        self.thresholds = thresholds
+
+    <span class="ck">def</span> <span class="cf">run</span>(self, production_window: pd.DataFrame) -> dict:
+        results = {}
+        <span class="ck">for</span> feature <span class="ck">in</span> production_window.columns:
+            <span class="ck">if</span> <span class="cf">is_numerical</span>(feature):
+                psi = <span class="cf">compute_psi</span>(self.reference[feature], production_window[feature])
+                ks_stat, ks_p = <span class="cf">ks_2samp</span>(self.reference[feature], production_window[feature])
+                results[feature] = {<span class="cs">"psi"</span>: psi, <span class="cs">"ks_stat"</span>: ks_stat, <span class="cs">"ks_p"</span>: ks_p}
+            <span class="ck">else</span>:
+                chi2, p = <span class="cf">chi_square_drift</span>(self.reference[feature], production_window[feature])
+                results[feature] = {<span class="cs">"chi2"</span>: chi2, <span class="cs">"chi2_p"</span>: p}
+
+        severity = self.<span class="cf">classify_severity</span>(results)
+        <span class="ck">if</span> severity == <span class="cs">"red"</span>:
+            <span class="cf">trigger_alert</span>(severity, results)
+            <span class="cf">initiate_retraining_pipeline</span>()
+        <span class="ck">elif</span> severity == <span class="cs">"yellow"</span>:
+            <span class="cf">create_investigation_ticket</span>(results)
+        <span class="ck">return</span> results
+  </div>
+</div>
+
+<footer>
+  <span>Kuldeep Rao</span> &nbsp;·&nbsp; Model Drift Monitoring
+</footer>
+
+<script>
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.section').forEach(s => observer.observe(s));
+
+function switchTab(id, btn) {
+  const section = btn.closest('.section');
+  section.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  section.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+
+const driftDetails = {
+  data: {
+    title: 'Data Drift',
+    body: `Input feature distributions shift over time. Word frequencies change, numeric ranges widen, new categorical values appear. The model's input no longer resembles training data.<br><br>
+    <strong style="color:var(--text)">ITSM example:</strong> After a cloud migration, ticket descriptions reference new cloud-native error codes that appeared 0 times in training data. The classifier defaults to majority class.<br><br>
+    <strong style="color:var(--text)">Detection:</strong> PSI on numerical features, chi-square on categoricals, embedding distance for text. PSI > 0.2 triggers alert.`
+  },
+  concept: {
+    title: 'Concept Drift',
+    body: `The relationship between inputs and the correct label changes. The model learned the wrong mapping for the current world.<br><br>
+    <strong style="color:var(--text)">ITSM example:</strong> "network down" tickets used to mean P1, but after infrastructure changes, most are now routine P3 maintenance. The model still predicts P1.<br><br>
+    <strong style="color:var(--text)">Detection:</strong> Requires labeled ground truth. Monitor label agreement rate as resolved tickets come in. Concept drift is the hardest to detect quickly.`
+  },
+  label: {
+    title: 'Label Drift',
+    body: `The prior distribution of the target label P(Y) changes, even if the input-label relationship is unchanged. Class frequencies shift in production vs training.<br><br>
+    <strong style="color:var(--text)">ITSM example:</strong> During Q4 freeze, change management tickets drop 80%. The model was trained on balanced classes and now over-predicts change requests.<br><br>
+    <strong style="color:var(--text)">Detection:</strong> Monitor predicted class distribution daily. Chi-square test against training class frequencies. Alert if any class shifts > 20%.`
+  },
+  infra: {
+    title: 'Infrastructure Drift',
+    body: `The model pipeline itself changes — different preprocessing, new feature engineering logic, serialization format changes, or library version updates that subtly alter numeric outputs.<br><br>
+    <strong style="color:var(--text)">ITSM example:</strong> A tokenizer library upgrade changes how special characters in ticket titles are handled, silently altering the model's input vectors.<br><br>
+    <strong style="color:var(--text)">Detection:</strong> Shadow testing all pipeline changes against a golden test set. Hash checksums on preprocessing outputs. Latency monitoring.`
+  }
+};
+
+function selectDrift(key, card) {
+  document.querySelectorAll('.era-card').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+  const detail = document.getElementById('drift-detail');
+  const content = document.getElementById('drift-detail-content');
+  const d = driftDetails[key];
+  content.innerHTML = `<strong style="color:var(--accent2)">${d.title}</strong><br><span style="font-size:13px;color:var(--muted)">${d.body}</span>`;
+  detail.classList.add('visible');
+}
+</script>
+</body>
+</html>

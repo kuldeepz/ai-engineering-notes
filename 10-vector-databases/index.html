@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vector Databases — Deep Dive Guide</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+:root{--bg:#0f1117;--bg2:#161b27;--bg3:#1e2535;--border:rgba(255,255,255,0.08);--text:#e2e8f0;--muted:#8892a4;--accent:#6366f1;--accent2:#22d3ee;--accent3:#f59e0b;--green:#10b981;--red:#f43f5e;--purple:#a78bfa;--font:'Inter',sans-serif;--mono:'JetBrains Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.7;overflow-x:hidden}
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4rem 2rem;position:relative;overflow:hidden}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(34,211,238,0.06) 1px,transparent 1px),linear-gradient(90deg,rgba(34,211,238,0.06) 1px,transparent 1px);background-size:48px 48px;mask-image:radial-gradient(ellipse at center,black 30%,transparent 80%)}
+.hero-glow{position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(34,211,238,0.1) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(34,211,238,0.12);border:1px solid rgba(34,211,238,0.3);border-radius:100px;padding:6px 16px;font-size:12px;font-weight:500;color:#67e8f9;margin-bottom:2rem;letter-spacing:0.05em;text-transform:uppercase}
+.hero h1{font-size:clamp(2.5rem,6vw,4.5rem);font-weight:600;letter-spacing:-0.03em;line-height:1.1;margin-bottom:1.5rem;position:relative}
+.hero h1 span{background:linear-gradient(135deg,#22d3ee,#6366f1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero p{font-size:1.15rem;color:var(--muted);max-width:600px;margin-bottom:3rem;position:relative}
+.hero-stats{display:flex;gap:3rem;position:relative;flex-wrap:wrap;justify-content:center}
+.stat{text-align:center}.stat-num{font-size:2rem;font-weight:600;color:var(--accent2);font-family:var(--mono)}.stat-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em}
+.scroll-hint{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);color:var(--muted);font-size:12px;display:flex;flex-direction:column;align-items:center;gap:8px;animation:bounce 2s ease-in-out infinite}
+@keyframes bounce{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(8px)}}
+.section{max-width:960px;margin:0 auto;padding:5rem 2rem;opacity:0;transform:translateY(30px);transition:opacity 0.6s ease,transform 0.6s ease}
+.section.visible{opacity:1;transform:translateY(0)}
+.section-label{font-size:11px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent2);margin-bottom:0.75rem}
+.section h2{font-size:clamp(1.6rem,3vw,2.2rem);font-weight:600;letter-spacing:-0.02em;margin-bottom:1rem;line-height:1.2}
+.section-intro{color:var(--muted);font-size:1.05rem;max-width:700px;margin-bottom:3rem}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1.5rem;transition:border-color 0.2s,transform 0.2s}
+.card:hover{border-color:rgba(34,211,238,0.25);transform:translateY(-2px)}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem}
+.card-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:1rem}
+.card h3{font-size:1rem;font-weight:600;margin-bottom:0.5rem}.card p{font-size:13px;color:var(--muted);line-height:1.6}
+.tag{display:inline-block;font-size:11px;font-weight:500;padding:3px 10px;border-radius:100px;margin-top:0.75rem}
+.tab-controls{display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1.5rem;border-bottom:1px solid var(--border);padding-bottom:1rem}
+.tab-btn{padding:8px 18px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--muted);font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.2s}
+.tab-btn.active{background:rgba(34,211,238,0.12);border-color:rgba(34,211,238,0.3);color:#67e8f9}
+.tab-btn:hover:not(.active){color:var(--text)}
+.tab-panel{display:none;animation:fadeIn 0.3s ease}.tab-panel.active{display:block}
+.flow{display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin:1.5rem 0}
+.flow-node{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.6rem 1rem;font-size:12px;font-weight:500;text-align:center;min-width:90px;line-height:1.4}
+.flow-arrow{color:var(--muted);font-size:16px;flex-shrink:0}
+.flow-node.hi{background:rgba(34,211,238,0.1);border-color:rgba(34,211,238,0.35);color:#67e8f9}
+.scale-table,.comp-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:1.5rem}
+.scale-table th,.comp-table th{text-align:left;padding:10px 16px;background:var(--bg3);color:var(--muted);font-weight:500;font-size:11px;letter-spacing:0.08em;text-transform:uppercase}
+.scale-table th:first-child,.comp-table th:first-child{border-radius:8px 0 0 8px}.scale-table th:last-child,.comp-table th:last-child{border-radius:0 8px 8px 0}
+.scale-table td,.comp-table td{padding:12px 16px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.6}
+.scale-table tr:last-child td,.comp-table tr:last-child td{border-bottom:none}
+.answer-box{background:linear-gradient(135deg,rgba(34,211,238,0.07),rgba(99,102,241,0.05));border:1px solid rgba(34,211,238,0.2);border-radius:16px;padding:2rem;margin-top:2rem}
+.answer-box p{font-size:14px;color:var(--muted);line-height:1.9}.answer-box p+p{margin-top:0.75rem}
+.code-block{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:1.25rem 1.5rem;font-family:var(--mono);font-size:12px;line-height:1.8;overflow-x:auto;margin-top:1rem}
+.cc{color:#6b7280}.ck{color:#a78bfa}.cs{color:#34d399}.cf{color:#60a5fa}.cn{color:#f59e0b}
+.badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:500}
+.divider{width:100%;height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:2rem 0}
+.meter{height:4px;background:var(--bg3);border-radius:2px;margin:4px 0 10px;overflow:hidden}
+.meter-fill{height:100%;border-radius:2px}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:3px}
+
+/* expand cards */
+.expand-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;overflow:hidden;cursor:pointer;transition:border-color 0.2s}
+.expand-card:hover{border-color:rgba(34,211,238,0.25)}
+.expand-header{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem}
+.expand-title{display:flex;align-items:center;gap:12px;font-weight:600;font-size:0.95rem}
+.expand-chevron{color:var(--muted);transition:transform 0.3s;font-size:18px}
+.expand-card.open .expand-chevron{transform:rotate(180deg)}
+.expand-body{display:none;padding:0 1.5rem 1.5rem;border-top:1px solid var(--border)}
+.expand-card.open .expand-body{display:block}
+.expand-body p,.expand-body li{font-size:13px;color:var(--muted);line-height:1.7}
+.expand-body ul{padding-left:1.2rem;margin-top:0.5rem}
+.expand-body strong{color:var(--text)}
+.step-num{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;background:rgba(34,211,238,0.15);color:#67e8f9}
+
+/* DB comparison card */
+.db-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1.5rem;transition:border-color 0.2s}
+.db-card:hover{border-color:rgba(34,211,238,0.25)}
+.db-name{font-weight:700;font-size:1rem;margin-bottom:0.25rem}
+.db-tag{font-size:11px;color:var(--muted);margin-bottom:1rem}
+.meter-label{font-size:11px;color:var(--muted);display:flex;justify-content:space-between}
+
+/* two-col layout */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media(max-width:640px){.two-col{grid-template-columns:1fr}}
+
+/* index diagram */
+.idx-viz{display:flex;align-items:center;justify-content:center;gap:4px;flex-wrap:wrap;margin:1rem 0}
+.idx-dot{width:10px;height:10px;border-radius:50%;background:var(--bg3);border:1px solid var(--border)}
+.idx-dot.active{background:var(--accent2);border-color:var(--accent2)}
+.idx-dot.cluster-a{background:rgba(99,102,241,0.6);border-color:#6366f1}
+.idx-dot.cluster-b{background:rgba(16,185,129,0.6);border-color:#10b981}
+.idx-dot.cluster-c{background:rgba(245,158,11,0.6);border-color:#f59e0b}
+
+footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--border);color:var(--muted);font-size:13px}
+footer span{color:var(--accent2)}
+@media(max-width:640px){.hero-stats{gap:1.5rem}.flow{flex-direction:column}.flow-arrow{transform:rotate(90deg)}.tab-btn{padding:6px 12px;font-size:12px}}
+@media(prefers-reduced-motion:reduce){*,.section{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-badge">Vector Search · HNSW · ANN · Embeddings · Production</div>
+  <h1>Vector<br><span>Databases</span></h1>
+  <p>Deep Dive Guide — from embeddings and ANN indexing to production deployment at scale</p>
+  <div class="hero-stats">
+    <div class="stat"><div class="stat-num">5+</div><div class="stat-label">Databases Compared</div></div>
+    <div class="stat"><div class="stat-num">3</div><div class="stat-label">Index Types</div></div>
+    <div class="stat"><div class="stat-num">2</div><div class="stat-label">Search Modes</div></div>
+    <div class="stat"><div class="stat-num">1B+</div><div class="stat-label">Vectors at Scale</div></div>
+  </div>
+  <div class="scroll-hint">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+    scroll to explore
+  </div>
+</section>
+
+<!-- 1. FOUNDATION -->
+<section class="section" id="foundation">
+  <div class="section-label">Section 01</div>
+  <h2>What is a vector database and when do you need one</h2>
+  <p class="section-intro">Traditional databases store and search by exact values. Vector databases store mathematical representations of meaning and search by semantic similarity. This is a fundamentally different paradigm.</p>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-icon" style="background:rgba(34,211,238,0.12)">📐</div>
+      <h3>What a vector is</h3>
+      <p>A dense array of floating-point numbers — e.g., <code style="font-family:var(--mono);font-size:11px;color:#67e8f9">[0.12, -0.87, 0.43, ...]</code> with 768 to 3072 dimensions. Each dimension encodes some aspect of meaning learned by the embedding model. Semantically similar content produces geometrically close vectors.</p>
+      <span class="tag" style="background:rgba(34,211,238,0.1);color:#67e8f9">High-dimensional float array</span>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(99,102,241,0.15)">🔍</div>
+      <h3>What similarity search does</h3>
+      <p>Given a query vector, find the K vectors in the database that are geometrically closest — by cosine similarity or Euclidean distance. "Find nearest city on a map" — except the map has 1536 dimensions and contains millions of cities.</p>
+      <span class="tag" style="background:rgba(99,102,241,0.15);color:#a5b4fc">Nearest neighbour retrieval</span>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(16,185,129,0.15)">⚡</div>
+      <h3>When you need a vector DB</h3>
+      <p><strong>Use it</strong> when you need semantic search, RAG, recommendation, or deduplication across millions of records. <strong>Skip it</strong> when you have &lt;50k docs (just use pgvector or in-memory), or when exact keyword matching is sufficient (Elasticsearch BM25).</p>
+      <span class="tag" style="background:rgba(16,185,129,0.15);color:#6ee7b7">RAG · Semantic search · Recommendations</span>
+    </div>
+  </div>
+</section>
+
+<!-- 2. HOW VECTOR SEARCH WORKS -->
+<section class="section" id="how">
+  <div class="section-label">Section 02</div>
+  <h2>How vector search works</h2>
+  <p class="section-intro">From storing embeddings to returning the nearest neighbours — click each step to see the technical detail.</p>
+  <div style="display:flex;flex-direction:column;gap:0.75rem">
+
+    <div class="expand-card" onclick="toggleExpand(this)">
+      <div class="expand-header">
+        <div class="expand-title"><div class="step-num">1</div> Store vectors — ingest and index embeddings</div>
+        <div class="expand-chevron">&#8964;</div>
+      </div>
+      <div class="expand-body">
+        <p><strong>What happens:</strong> You pass each document through an embedding model (e.g., text-embedding-3-large). The resulting float array is stored alongside metadata (doc ID, text, filters). The index builds an internal graph or cluster structure to allow fast retrieval later.</p>
+        <p style="margin-top:0.5rem"><strong>Key decisions:</strong> Choice of embedding model (dimension, language support), normalization (L2 normalize for cosine similarity), and whether to store the raw text or just the vector.</p>
+      </div>
+    </div>
+
+    <div class="expand-card" onclick="toggleExpand(this)">
+      <div class="expand-header">
+        <div class="expand-title"><div class="step-num">2</div> Query embedding — convert the question to a vector</div>
+        <div class="expand-chevron">&#8964;</div>
+      </div>
+      <div class="expand-body">
+        <p><strong>What happens:</strong> The user's query is passed through the same embedding model used at ingest time. You must use the same model — vectors from different models are not comparable, even if they have the same dimensions.</p>
+        <p style="margin-top:0.5rem"><strong>Latency consideration:</strong> Embedding a short query typically takes 20–80ms via API. For ultra-low latency, run the embedding model locally or keep it warm in a sidecar container.</p>
+      </div>
+    </div>
+
+    <div class="expand-card" onclick="toggleExpand(this)">
+      <div class="expand-header">
+        <div class="expand-title"><div class="step-num">3</div> ANN search — approximate nearest neighbour lookup</div>
+        <div class="expand-chevron">&#8964;</div>
+      </div>
+      <div class="expand-body">
+        <p><strong>What happens:</strong> An exact search would compare the query vector against every stored vector — O(n×d). For millions of vectors this is too slow. Approximate Nearest Neighbour (ANN) algorithms like HNSW trade a small accuracy loss for orders-of-magnitude speed improvement.</p>
+        <p style="margin-top:0.5rem"><strong>Accuracy vs speed:</strong> At ef=64, HNSW returns ~97% of the true nearest neighbours at 10× the speed of brute force. The "approximate" accuracy loss is almost never noticeable in real applications.</p>
+      </div>
+    </div>
+
+    <div class="expand-card" onclick="toggleExpand(this)">
+      <div class="expand-header">
+        <div class="expand-title"><div class="step-num">4</div> Return top-K with scores and metadata</div>
+        <div class="expand-chevron">&#8964;</div>
+      </div>
+      <div class="expand-body">
+        <p><strong>What you get back:</strong> A ranked list of K results, each with a similarity score (0–1 for cosine, lower=closer for L2) and the metadata you stored at ingest time. You then pass these results as context to your LLM.</p>
+        <p style="margin-top:0.5rem"><strong>Score interpretation:</strong> Cosine similarity above 0.85 generally indicates high semantic relevance. Below 0.7 is often noise. Set a minimum score threshold rather than blindly passing all K results to the LLM.</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- 3. INDEX TYPES -->
+<section class="section" id="indexing">
+  <div class="section-label">Section 03</div>
+  <h2>Index types</h2>
+  <p class="section-intro">Three indexing algorithms — each with different accuracy, speed, and memory trade-offs. Click to explore.</p>
+
+  <div class="tab-controls" id="idx-tabs">
+    <button class="tab-btn active" onclick="switchTab('idx','flat',this)">FLAT (Exact)</button>
+    <button class="tab-btn" onclick="switchTab('idx','ivf',this)">IVF (Clusters)</button>
+    <button class="tab-btn" onclick="switchTab('idx','hnsw',this)">HNSW (Graph)</button>
+  </div>
+
+  <div id="idx-flat" class="tab-panel active">
+    <p style="color:var(--muted);font-size:13px"><strong style="color:var(--text)">How it works:</strong> Brute-force — compare query vector against every stored vector. 100% accurate (no approximation). Scales linearly with dataset size.</p>
+    <div class="idx-viz">
+      <div class="idx-dot active"></div>
+      <div class="idx-dot"></div><div class="idx-dot"></div><div class="idx-dot"></div><div class="idx-dot"></div>
+      <div class="idx-dot"></div><div class="idx-dot"></div><div class="idx-dot"></div><div class="idx-dot"></div>
+      <div class="idx-dot"></div><div class="idx-dot"></div><div class="idx-dot"></div>
+      <div style="font-size:11px;color:var(--muted);width:100%;text-align:center;margin-top:4px">Query → compare against every dot</div>
+    </div>
+    <table class="scale-table">
+      <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>Accuracy (recall@10)</td><td><span class="badge" style="background:rgba(16,185,129,0.15);color:#6ee7b7">100%</span></td></tr>
+        <tr><td>Query speed</td><td><span class="badge" style="background:rgba(244,63,94,0.15);color:#fda4af">O(n×d) — slow at scale</span></td></tr>
+        <tr><td>Memory</td><td>Low — just the vectors</td></tr>
+        <tr><td>When to use</td><td>Dataset &lt; 100k vectors, or when perfect recall is required</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div id="idx-ivf" class="tab-panel">
+    <p style="color:var(--muted);font-size:13px"><strong style="color:var(--text)">How it works:</strong> K-means clustering divides vectors into nlist clusters at build time. At query time, only the nprobe nearest clusters are searched. This reduces search scope from n to roughly n/nlist × nprobe vectors.</p>
+    <div class="idx-viz">
+      <div class="idx-dot cluster-a"></div><div class="idx-dot cluster-a"></div><div class="idx-dot cluster-a"></div>
+      <div style="width:16px"></div>
+      <div class="idx-dot cluster-b"></div><div class="idx-dot cluster-b"></div><div class="idx-dot cluster-b active"></div>
+      <div style="width:16px"></div>
+      <div class="idx-dot cluster-c"></div><div class="idx-dot cluster-c"></div><div class="idx-dot cluster-c"></div>
+      <div style="font-size:11px;color:var(--muted);width:100%;text-align:center;margin-top:4px">Vectors grouped into clusters — only search nearest clusters</div>
+    </div>
+    <table class="scale-table">
+      <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>Accuracy (recall@10)</td><td>85–95% (tunable via nprobe)</td></tr>
+        <tr><td>Query speed</td><td><span class="badge" style="background:rgba(16,185,129,0.15);color:#6ee7b7">Fast at medium scale</span></td></tr>
+        <tr><td>Build time</td><td>Moderate — requires k-means training pass</td></tr>
+        <tr><td>When to use</td><td>1M–100M vectors, good CPU hardware, batch workloads</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div id="idx-hnsw" class="tab-panel">
+    <p style="color:var(--muted);font-size:13px"><strong style="color:var(--text)">How it works:</strong> Builds a multi-layer navigable small-world graph. Top layers are sparse (long-range links for fast navigation), bottom layers are dense (precise local search). Traversal starts at the top and drills down to the nearest neighbours.</p>
+    <p style="color:var(--muted);font-size:13px;margin-top:0.5rem"><strong style="color:var(--text)">Key insight:</strong> HNSW is the default choice for most production systems — it has the best recall/latency trade-off and supports incremental insertion without full re-indexing.</p>
+    <table class="scale-table">
+      <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>Accuracy (recall@10)</td><td><span class="badge" style="background:rgba(16,185,129,0.15);color:#6ee7b7">95–99% at ef=128</span></td></tr>
+        <tr><td>Query speed</td><td><span class="badge" style="background:rgba(16,185,129,0.15);color:#6ee7b7">O(log n) — very fast</span></td></tr>
+        <tr><td>Memory</td><td>Higher — graph structure overhead (M parameter)</td></tr>
+        <tr><td>Key parameters</td><td>M (graph connectivity, default 16), ef_construction, ef (search)</td></tr>
+        <tr><td>When to use</td><td>Most production use cases — up to hundreds of millions of vectors</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- 4. SEARCH MODES -->
+<section class="section" id="search-modes">
+  <div class="section-label">Section 04</div>
+  <h2>Search modes</h2>
+  <p class="section-intro">Vector search and hybrid search solve different problems. Knowing when to use each is critical.</p>
+
+  <div class="two-col">
+    <div class="card">
+      <div class="card-icon" style="background:rgba(34,211,238,0.12)">🧭</div>
+      <h3>Pure vector search</h3>
+      <p style="font-size:13px;color:var(--muted)">Finds semantically similar content regardless of exact wording. "What is the return policy?" matches documents containing "refund procedure" even without keyword overlap.</p>
+      <p style="font-size:13px;color:var(--muted);margin-top:0.5rem"><strong style="color:var(--text)">Wins when:</strong> Paraphrased queries, multilingual search, conceptual similarity, ambiguous user language.</p>
+      <p style="font-size:13px;color:var(--muted);margin-top:0.5rem"><strong style="color:var(--text)">Loses when:</strong> Exact product codes (SKU-1234), proper nouns, technical acronyms — the embedding may not preserve these precisely.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(99,102,241,0.15)">🔀</div>
+      <h3>Hybrid search (vector + BM25)</h3>
+      <p style="font-size:13px;color:var(--muted)">Runs vector search AND BM25 keyword search in parallel, then merges results using Reciprocal Rank Fusion (RRF). Gets the best of semantic understanding and exact matching.</p>
+      <p style="font-size:13px;color:var(--muted);margin-top:0.5rem"><strong style="color:var(--text)">RRF formula:</strong> score = Σ 1 / (k + rank_i) where k=60 is a smoothing constant and rank_i is each result's position in the individual ranked lists.</p>
+      <p style="font-size:13px;color:var(--muted);margin-top:0.5rem"><strong style="color:var(--text)">Default recommendation:</strong> Use hybrid for most RAG systems. The improvement in retrieval quality is worth the small latency overhead.</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:1rem">
+    <h3>When hybrid wins over pure vector</h3>
+    <p style="font-size:13px;color:var(--muted);margin-top:0.5rem">Technical product documentation (part numbers, model IDs), customer support (ticket IDs, account numbers), code search (function names, variable names), medical records (drug names, ICD codes). In these domains BM25 catches exact matches that vectors smear across the embedding space.</p>
+  </div>
+</section>
+
+<!-- 5. DATABASE COMPARISON -->
+<section class="section" id="comparison">
+  <div class="section-label">Section 05</div>
+  <h2>Database comparison</h2>
+  <p class="section-intro">Seven options evaluated across the dimensions that matter in production — vector quality, hybrid search, scale, ease of setup, and cost.</p>
+
+  <div class="card-grid">
+
+    <div class="db-card">
+      <div class="db-name">Azure AI Search</div>
+      <div class="db-tag">Microsoft managed · Hybrid-first</div>
+      <div class="meter-label"><span>Vector search</span><span>90%</span></div>
+      <div class="meter"><div class="meter-fill" style="width:90%;background:linear-gradient(90deg,#6366f1,#22d3ee)"></div></div>
+      <div class="meter-label"><span>Hybrid search</span><span>95%</span></div>
+      <div class="meter"><div class="meter-fill" style="width:95%;background:linear-gradient(90deg,#6366f1,#22d3ee)"></div></div>
+      <div class="meter-label"><span>Ease of setup</span><span>85%</span></div>
+      <div class="meter"><div class="meter-fill" style="width:85%;background:#10b981"></div></div>
+      <div class="meter-label"><span>Scale</span><span>90%</span></div>
+      <div class="meter"><div class="meter-fill" style="width:90%;background:#f59e0b"></div></div>
+      <p style="font-size:12px;color:var(--muted);margin-top:0.5rem">Best for Azure-native stacks. Integrated with Azure OpenAI. Excellent hybrid search out of the box.</p>
+    </div>
+
+    <div class="db-card">
+      <div class="db-name">Qdrant</div>
+      <div class="db-tag">Open source · Rust-built · Self-host or cloud</div>
+      <div class="meter-label"><span>Vector search</span><span>95%</span></div>
+      <div class="meter"><div class="meter-fill" style="width:95%;background:linear-gradient(90deg,#6366f1,#22d3ee)"></div></div>
+      <div class="meter-label"><span>Hybrid search</span><span>80%</span></div>
+      <div class="meter"><div class="meter-fill" style="width:80%;background:linear-gradient(90deg,#6366f1,#22d3ee)"></div></div>
+      <div class="meter-label"><span>Ease of setup</span><span>88%</span></div>
+      <div class="meter"><div class="meter-fill" style="width:88%;background:#10b981"></div></div>
+      <div class="meter-label"><span>Scale</span><span>92%</span></div>
+      <div class="meter"><div class="meter-fill" style="width:92%;background:#f59e0b"></div></div>
+      <p style="font-size:12px;color:var(--muted);margin-top:0.5rem">Best-in-class HNSW performance. Rich filtering. Good for teams wanting control without full infrastructure burden.</p>
+    </div>
+
+    <div class="db-card">
+      <div class="db-name">Weaviate</div>
+      <div class="db-tag">Open source · GraphQL API · Modules</div>
+      <div class="meter-label"><span>Vector search</span><span>88%</span></div>
+      <div class="meter"><div class="meter-fill" style="width:88%;background:linear-gradient(90deg,#6366f1,#22d3ee)"></div></div>
+      <div class="meter-label"><span>Hybrid search</span><span>85%</span></div>
+      <div class="meter"><div class="meter-fill" style="width:85%;background:linear-gradient(90deg,#6366f1,#22d3ee)"></div></div>
+      <div class="meter-label"><span>Ease of setup</span><span>75%</span></div>
+      <div class="meter"><div class="meter-fill" style="width:75%;background:#10b981"></div></div>
+      <div class="meter-label"><span>Scale</span><span>85%</span></div>
+      <div class="meter"><div class="meter-fill" style="width:85%;background:#f59e0b"></div></div>
+      <p style="font-size:12px;color:var(--muted);margin-top:0.5rem">Strong module ecosystem (auto-vectorization, generative). Good choice for teams that want schema-first design.</p>
+    </div>
+
+    <div class="db-card">
+      <div class="db-name">Chroma</div>
+      <div class="db-tag">Open source · Python-first · Dev-friendly</div>
+      <div class="meter-label"><span>Vector search</span><span>75%</span></div>
+      <div class="meter"><div class="meter-fill" style="width:75%;background:linear-gradient(90deg,#6366f1,#22d3ee)"></div></div>
+      <div class="meter-label"><span>Hybrid search</span><span>50%</span></div>
+      <div class="meter"><div class="meter-fill" style="width:50%;background:linear-gradient(90deg,#6366f1,#22d3ee)"></div></div>
+      <div class="meter-label"><span>Ease of setup</span><span>98%</span></div>
+      <div class="meter"><div class="meter-fill" style="width:98%;background:#10b981"></div></div>
+      <div class="meter-label"><span>Scale</span><span>55%</span></div>
+      <div class="meter"><div class="meter-fill" style="width:55%;background:#f59e0b"></div></div>
+      <p style="font-size:12px;color:var(--muted);margin-top:0.5rem">Best for prototyping and local development. 3 lines to get started. Not recommended for production at scale.</p>
+    </div>
+
+    <div class="db-card">
+      <div class="db-name">Milvus</div>
+      <div class="db-tag">Open source · Cloud-native · High scale</div>
+      <div class="meter-label"><span>Vector search</span><span>92%</span></div>
+      <div class="meter"><div class="meter-fill" style="width:92%;background:linear-gradient(90deg,#6366f1,#22d3ee)"></div></div>
+      <div class="meter-label"><span>Hybrid search</span><span>78%</span></div>
+      <div class="meter"><div class="meter-fill" style="width:78%;background:linear-gradient(90deg,#6366f1,#22d3ee)"></div></div>
+      <div class="meter-label"><span>Ease of setup</span><span>60%</span></div>
+      <div class="meter"><div class="meter-fill" style="width:60%;background:#10b981"></div></div>
+      <div class="meter-label"><span>Scale</span><span>98%</span></div>
+      <div class="meter"><div class="meter-fill" style="width:98%;background:#f59e0b"></div></div>
+      <p style="font-size:12px;color:var(--muted);margin-top:0.5rem">Best for billion-scale vector collections. Complex ops overhead — suited to dedicated ML platform teams.</p>
+    </div>
+
+    <div class="db-card">
+      <div class="db-name">Pinecone</div>
+      <div class="db-tag">Fully managed · Serverless tier · Simple API</div>
+      <div class="meter-label"><span>Vector search</span><span>88%</span></div>
+      <div class="meter"><div class="meter-fill" style="width:88%;background:linear-gradient(90deg,#6366f1,#22d3ee)"></div></div>
+      <div class="meter-label"><span>Hybrid search</span><span>75%</span></div>
+      <div class="meter"><div class="meter-fill" style="width:75%;background:linear-gradient(90deg,#6366f1,#22d3ee)"></div></div>
+      <div class="meter-label"><span>Ease of setup</span><span>95%</span></div>
+      <div class="meter"><div class="meter-fill" style="width:95%;background:#10b981"></div></div>
+      <div class="meter-label"><span>Scale</span><span>85%</span></div>
+      <div class="meter"><div class="meter-fill" style="width:85%;background:#f59e0b"></div></div>
+      <p style="font-size:12px;color:var(--muted);margin-top:0.5rem">Zero infra management. Good for fast shipping. Vendor lock-in and cost at scale are the main drawbacks.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- 6. FILTERING -->
+<section class="section" id="filtering">
+  <div class="section-label">Section 06</div>
+  <h2>Filtering + vector search</h2>
+  <p class="section-intro">Metadata filtering is essential for multi-tenant systems, date-range queries, and access control. The implementation strategy matters.</p>
+
+  <div class="two-col" style="margin-bottom:1.5rem">
+    <div class="card">
+      <div class="card-icon" style="background:rgba(16,185,129,0.15)">⚡</div>
+      <h3>Pre-filtering</h3>
+      <p style="font-size:13px;color:var(--muted)">Apply metadata filter <em>before</em> the ANN search. Narrows the candidate set first, then runs ANN only on matching vectors. Faster but can miss relevant results when the filtered subset is very small — HNSW graph may not have enough connections within the subset.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(245,158,11,0.15)">🎯</div>
+      <h3>Post-filtering</h3>
+      <p style="font-size:13px;color:var(--muted)">Run ANN search first, then filter results by metadata. Higher recall because ANN sees the full graph. More expensive — you must retrieve more candidates than K and filter down. Use when selectivity is high (&gt;10% of index matches filter).</p>
+    </div>
+  </div>
+
+  <div class="code-block"><span class="cc"># Filtered vector search — Qdrant example</span>
+<span class="ck">from</span> qdrant_client <span class="ck">import</span> QdrantClient
+<span class="ck">from</span> qdrant_client.models <span class="ck">import</span> Filter, FieldCondition, MatchValue, Range
+
+client = QdrantClient(<span class="cs">"localhost"</span>, port=<span class="cn">6333</span>)
+
+<span class="cc"># Pre-filter: only search documents from tenant_id AND within date range</span>
+results = client.search(
+    collection_name=<span class="cs">"documents"</span>,
+    query_vector=query_embedding,
+    query_filter=Filter(
+        must=[
+            FieldCondition(key=<span class="cs">"tenant_id"</span>, match=MatchValue(value=<span class="cs">"acme-corp"</span>)),
+            FieldCondition(key=<span class="cs">"created_at"</span>,
+                           range=Range(gte=<span class="cn">1704067200</span>, lte=<span class="cn">1735689600</span>))
+        ]
+    ),
+    limit=<span class="cn">10</span>,
+    with_payload=<span class="ck">True</span>,
+    score_threshold=<span class="cn">0.75</span>  <span class="cc"># ignore low-relevance results</span>
+)</div>
+</section>
+
+<!-- 7. SCALE CONSIDERATIONS -->
+<section class="section" id="scale">
+  <div class="section-label">Section 07</div>
+  <h2>Scale considerations</h2>
+  <p class="section-intro">How requirements and architecture change as your vector collection grows.</p>
+  <table class="scale-table">
+    <thead><tr><th>Scale</th><th>Vector count</th><th>Index size</th><th>Query latency (p95)</th><th>Sharding / strategy</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="badge" style="background:rgba(16,185,129,0.15);color:#6ee7b7">Small</span></td>
+        <td>&lt; 100k</td>
+        <td>~400 MB (1536-dim float32)</td>
+        <td>&lt; 10ms</td>
+        <td>Single node. pgvector or Chroma. No sharding needed.</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:rgba(34,211,238,0.15);color:#67e8f9">Medium</span></td>
+        <td>100k – 10M</td>
+        <td>400 MB – 40 GB</td>
+        <td>10–50ms</td>
+        <td>Single node with HNSW. Qdrant, Weaviate, or Pinecone. Consider quantization (int8) to reduce memory.</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:rgba(245,158,11,0.15);color:#fcd34d">Large</span></td>
+        <td>10M – 500M</td>
+        <td>40 GB – 2 TB</td>
+        <td>50–150ms</td>
+        <td>Distributed sharding. Milvus or Qdrant cluster. Quantization required. Consider IVF for cost efficiency.</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:rgba(244,63,94,0.15);color:#fda4af">Massive</span></td>
+        <td>&gt; 500M</td>
+        <td>&gt; 2 TB</td>
+        <td>100–300ms</td>
+        <td>Multi-shard + hierarchical index. Milvus at scale, custom infra. Binary quantization for extreme compression.</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- 8. PRODUCTION PATTERNS -->
+<section class="section" id="production">
+  <div class="section-label">Section 08</div>
+  <h2>Production patterns</h2>
+  <p class="section-intro">Four architectural patterns every production vector DB deployment needs.</p>
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-icon" style="background:rgba(99,102,241,0.15)">🏢</div>
+      <h3>Namespace isolation (multi-tenant)</h3>
+      <p>Each tenant gets their own namespace or collection. Prevents cross-tenant data leakage. Filter by tenant_id on every query — never rely on application logic alone to enforce isolation.</p>
+      <span class="tag" style="background:rgba(99,102,241,0.15);color:#a5b4fc">Hard isolation at query layer</span>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(34,211,238,0.12)">🔄</div>
+      <h3>Index refresh strategy</h3>
+      <p>New documents: append immediately (HNSW supports incremental insert). Full re-index: needed when changing embedding model or chunking strategy. Use blue/green index swap to avoid downtime during re-index.</p>
+      <span class="tag" style="background:rgba(34,211,238,0.12);color:#67e8f9">Zero-downtime re-indexing</span>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(16,185,129,0.15)">💾</div>
+      <h3>Backup and recovery</h3>
+      <p>Snapshot the vector index and metadata store separately. Test restoration quarterly — vector index snapshots are large and restoration can be slow. Keep the source text/chunking pipeline so you can re-embed from scratch if needed.</p>
+      <span class="tag" style="background:rgba(16,185,129,0.15);color:#6ee7b7">RTO / RPO planning</span>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(245,158,11,0.15)">📊</div>
+      <h3>Monitoring (key metrics)</h3>
+      <p><strong>Query latency p95/p99</strong> — spike indicates index fragmentation or resource pressure. <strong>Index size growth</strong> — plan for capacity. <strong>Recall@K</strong> — measure periodically with labelled test queries. <strong>Cache hit rate</strong> — semantic query cache reduces LLM calls.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 9. END-TO-END GUIDE -->
+<section class="section" id="guide">
+  <div class="section-label">Section 09</div>
+  <h2>End-to-end guide</h2>
+  <p class="section-intro">How to choose and deploy a vector DB for your use case — the complete decision path.</p>
+
+  <div class="flow">
+    <div class="flow-node hi">Define use case</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node hi">Choose embedding model</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node hi">Select DB + index</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">Chunk + embed + ingest</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node hi">Configure filtering</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node hi">Add hybrid search</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">Monitor recall@K</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node hi">Production</div>
+  </div>
+
+  <div class="answer-box">
+    <p><strong style="color:var(--text)">Choosing your database:</strong> Start with Azure AI Search if you are on Azure and need hybrid search from day one. Use Qdrant if you want open-source with excellent performance and don't want to manage Kubernetes complexity. Use Chroma for local development and prototyping only. Use Milvus only when you genuinely need billion-scale collections and have ML infra engineers to operate it.</p>
+    <p><strong style="color:var(--text)">Choosing your index:</strong> Default to HNSW for all new production systems. Tune M=16 and ef_construction=200 as a starting point. Only consider IVF if your hardware budget is tight and you can accept slightly lower recall. FLAT is appropriate only for small collections or when you need guaranteed 100% recall.</p>
+    <p><strong style="color:var(--text)">The most common mistake:</strong> Skipping hybrid search. Pure vector search will miss exact product codes, error message strings, and proper nouns. Adding BM25 hybrid search typically improves RAG answer quality by 10–20% on real-world enterprise document sets with no change to the embedding model or chunking strategy.</p>
+    <p><strong style="color:var(--text)">Production readiness checklist:</strong> Tenant isolation enforced at query layer · Score threshold set (discard irrelevant results) · Index backup and restore tested · Recall@10 measured on labelled test set · Query latency p99 monitored · Embedding model version pinned (changing model requires full re-index).</p>
+  </div>
+</section>
+
+<footer>
+  <p>Kuldeep Rao &nbsp;·&nbsp; <span>Vector Databases</span></p>
+</footer>
+
+<script>
+// Scroll reveal
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.section').forEach(s => observer.observe(s));
+
+// Expand/collapse cards
+function toggleExpand(card) {
+  card.classList.toggle('open');
+}
+
+// Tab switching
+function switchTab(group, name, btn) {
+  document.querySelectorAll('[id^="' + group + '-"]').forEach(p => p.classList.remove('active'));
+  const target = document.getElementById(group + '-' + name);
+  if (target) target.classList.add('active');
+  btn.closest('.tab-controls').querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+</script>
+</body>
+</html>

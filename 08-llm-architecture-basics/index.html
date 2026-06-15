@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLM Architecture Basics — How Large Language Models Work</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+:root{--bg:#0f1117;--bg2:#161b27;--bg3:#1e2535;--border:rgba(255,255,255,0.08);--text:#e2e8f0;--muted:#8892a4;--accent:#6366f1;--accent2:#22d3ee;--accent3:#f59e0b;--green:#10b981;--red:#f43f5e;--purple:#a78bfa;--font:'Inter',sans-serif;--mono:'JetBrains Mono',monospace;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.7;overflow-x:hidden;}
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4rem 2rem;position:relative;overflow:hidden;}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(99,102,241,0.07) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,0.07) 1px,transparent 1px);background-size:48px 48px;mask-image:radial-gradient(ellipse at center,black 30%,transparent 80%);}
+.hero-glow{position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(167,139,250,0.1) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);border-radius:100px;padding:6px 16px;font-size:12px;font-weight:500;color:#a5b4fc;margin-bottom:2rem;letter-spacing:0.05em;text-transform:uppercase;}
+.hero h1{font-size:clamp(2.5rem,6vw,4.5rem);font-weight:600;letter-spacing:-0.03em;line-height:1.1;margin-bottom:1.5rem;position:relative;}
+.hero h1 span{background:linear-gradient(135deg,#a78bfa,#6366f1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hero p{font-size:1.15rem;color:var(--muted);max-width:600px;margin-bottom:3rem;position:relative;}
+.hero-stats{display:flex;gap:3rem;position:relative;flex-wrap:wrap;justify-content:center;}
+.stat{text-align:center;}.stat-num{font-size:2rem;font-weight:600;color:var(--accent2);font-family:var(--mono);}.stat-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;}
+.scroll-hint{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);color:var(--muted);font-size:12px;display:flex;flex-direction:column;align-items:center;gap:8px;animation:bounce 2s ease-in-out infinite;}
+@keyframes bounce{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(8px)}}
+.section{max-width:960px;margin:0 auto;padding:5rem 2rem;opacity:0;transform:translateY(30px);transition:opacity 0.6s ease,transform 0.6s ease;}
+.section.visible{opacity:1;transform:translateY(0);}
+.section-label{font-size:11px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:0.75rem;}
+.section h2{font-size:clamp(1.6rem,3vw,2.2rem);font-weight:600;letter-spacing:-0.02em;margin-bottom:1rem;line-height:1.2;}
+.section-intro{color:var(--muted);font-size:1.05rem;max-width:700px;margin-bottom:3rem;}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1.5rem;transition:border-color 0.2s,transform 0.2s;}
+.card:hover{border-color:rgba(99,102,241,0.3);transform:translateY(-2px);}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;}
+.card-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:1rem;}
+.card h3{font-size:1rem;font-weight:600;margin-bottom:0.5rem;}.card p{font-size:13px;color:var(--muted);line-height:1.6;}
+.tag{display:inline-block;font-size:11px;font-weight:500;padding:3px 10px;border-radius:100px;margin-top:0.75rem;}
+.tab-controls{display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1.5rem;border-bottom:1px solid var(--border);padding-bottom:1rem;}
+.tab-btn{padding:8px 18px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--muted);font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.2s;}
+.tab-btn.active{background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.3);color:#a5b4fc;}
+.tab-btn:hover:not(.active){color:var(--text);}
+.tab-panel{display:none;animation:fadeIn 0.3s ease;}.tab-panel.active{display:block;}
+.flow{display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin:1.5rem 0;}
+.flow-node{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.6rem 1rem;font-size:12px;font-weight:500;text-align:center;min-width:90px;line-height:1.4;}
+.flow-arrow{color:var(--muted);font-size:16px;flex-shrink:0;}
+.flow-node.hi{background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.4);color:#a5b4fc;}
+.scale-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:1.5rem;}
+.scale-table th{text-align:left;padding:10px 16px;background:var(--bg3);color:var(--muted);font-weight:500;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;}
+.scale-table th:first-child{border-radius:8px 0 0 8px;}.scale-table th:last-child{border-radius:0 8px 8px 0;}
+.scale-table td{padding:12px 16px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.6;}
+.scale-table tr:last-child td{border-bottom:none;}.scale-table tr:hover td{background:rgba(255,255,255,0.02);}
+.answer-box{background:linear-gradient(135deg,rgba(99,102,241,0.08),rgba(167,139,250,0.05));border:1px solid rgba(99,102,241,0.25);border-radius:16px;padding:2rem;margin-top:2rem;}
+.answer-box p{font-size:14px;color:var(--muted);line-height:1.9;}.answer-box p+p{margin-top:0.75rem;}
+.code-block{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:1.25rem 1.5rem;font-family:var(--mono);font-size:12px;line-height:1.8;overflow-x:auto;margin-top:1rem;}
+.cc{color:#6b7280}.ck{color:#a78bfa}.cs{color:#34d399}.cf{color:#60a5fa}.cn{color:#f59e0b}
+.badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:500;}
+.divider{width:100%;height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:2rem 0;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:3px}
+@media(max-width:640px){.hero-stats{gap:1.5rem}.flow{flex-direction:column}.flow-arrow{transform:rotate(90deg)}.tab-btn{padding:6px 12px;font-size:12px}}
+@media(prefers-reduced-motion:reduce){*,.section{animation:none!important;transition:none!important}}
+
+/* file-specific */
+.token-demo{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1.5rem;margin-top:1.5rem;}
+.token-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:1rem;}
+.token-chip{padding:4px 10px;border-radius:8px;font-family:var(--mono);font-size:13px;font-weight:500;cursor:default;}
+.token-chip:hover .token-id{display:inline;}
+.token-id{font-size:10px;margin-left:4px;opacity:0.6;}
+.attention-viz{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:1.5rem 0;max-width:400px;}
+.attn-cell{aspect-ratio:1;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:rgba(255,255,255,0.8);transition:transform 0.2s;}
+.attn-cell:hover{transform:scale(1.1);z-index:1;}
+.attn-words{display:flex;gap:4px;margin-bottom:4px;flex-wrap:wrap;}
+.attn-word{font-size:12px;padding:2px 8px;border-radius:6px;background:var(--bg3);border:1px solid var(--border);}
+.arch-step{background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:0.75rem;cursor:pointer;transition:border-color 0.2s;}
+.arch-step:hover{border-color:rgba(99,102,241,0.4);}
+.arch-step-header{padding:1rem 1.5rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;}
+.arch-step-header .as-num{font-family:var(--mono);font-size:11px;background:rgba(99,102,241,0.15);color:#a5b4fc;padding:2px 8px;border-radius:6px;}
+.arch-step-header .as-name{font-size:14px;font-weight:600;flex:1;}
+.arch-step-header .as-chevron{color:var(--muted);font-size:16px;transition:transform 0.3s;}
+.arch-step.open .as-chevron{transform:rotate(180deg);}
+.arch-step-body{display:none;padding:0 1.5rem 1.25rem;border-top:1px solid var(--border);}
+.arch-step.open .arch-step-body{display:block;}
+.arch-step-body p{font-size:13px;color:var(--muted);margin-top:0.75rem;line-height:1.8;}
+.param-demo{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-top:1rem;}
+.temp-bar-wrap{margin-top:0.75rem;}
+.temp-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px;}
+.temp-bar{height:8px;border-radius:4px;background:linear-gradient(90deg,var(--accent2),var(--accent),var(--red));position:relative;}
+.temp-marker{position:absolute;top:-2px;width:4px;height:12px;border-radius:2px;background:white;transform:translateX(-50%);transition:left 0.3s;}
+.decision-tree{margin-top:1.5rem;}
+.dt-node{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1rem 1.5rem;margin:0.5rem 0;}
+.dt-node.question{border-color:rgba(99,102,241,0.4);background:rgba(99,102,241,0.06);}
+.dt-node.answer-rag{border-color:rgba(34,211,238,0.4);background:rgba(34,211,238,0.06);}
+.dt-node.answer-ft{border-color:rgba(167,139,250,0.4);background:rgba(167,139,250,0.06);}
+.dt-node.answer-prompt{border-color:rgba(16,185,129,0.4);background:rgba(16,185,129,0.06);}
+.dt-q{font-size:13px;font-weight:600;}
+.dt-branches{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:0.75rem;padding-left:1.5rem;}
+.dt-branch-label{font-size:11px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.08em;}
+.dt-answer{font-size:13px;font-weight:500;}
+footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--border);color:var(--muted);font-size:13px;}
+footer span{color:var(--text);font-weight:500;}
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-badge">Transformers · Attention · Tokenization · Architecture</div>
+  <h1>LLM <span>Architecture</span> Basics</h1>
+  <p>How Large Language Models Work — from tokens to transformers, attention to generation.</p>
+  <div class="hero-stats">
+    <div class="stat"><div class="stat-num">1</div><div class="stat-label">Architecture</div></div>
+    <div class="stat"><div class="stat-num">3</div><div class="stat-label">Key Mechanisms</div></div>
+    <div class="stat"><div class="stat-num">4</div><div class="stat-label">Model Families</div></div>
+    <div class="stat"><div class="stat-num">1T+</div><div class="stat-label">Parameters</div></div>
+  </div>
+  <div class="scroll-hint">
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+    scroll to explore
+  </div>
+</section>
+
+<!-- SECTION 1: Foundation -->
+<section class="section">
+  <div class="section-label">Section 01</div>
+  <h2>What happens when you send a prompt to an LLM</h2>
+  <p class="section-intro">Every response you've ever seen from an LLM is the result of the same sequence of operations, repeated billions of times.</p>
+
+  <div class="flow">
+    <div class="flow-node hi">Your Text</div><div class="flow-arrow">→</div>
+    <div class="flow-node hi">Tokens</div><div class="flow-arrow">→</div>
+    <div class="flow-node hi">Embeddings</div><div class="flow-arrow">→</div>
+    <div class="flow-node hi">N × Transformer Layers</div><div class="flow-arrow">→</div>
+    <div class="flow-node hi">Logits (vocab scores)</div><div class="flow-arrow">→</div>
+    <div class="flow-node hi">Next Token</div><div class="flow-arrow">→</div>
+    <div class="flow-node hi">Repeat → Text</div>
+  </div>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-icon" style="background:rgba(99,102,241,0.12)">🔢</div>
+      <h3>Tokenization</h3>
+      <p>Text is split into subword units called tokens. Each token maps to an integer ID. "unhappy" might be ["un", "happy"] = [234, 891]. The model never sees raw text.</p>
+      <span class="tag" style="background:rgba(99,102,241,0.12);color:#a5b4fc">Text → Numbers</span>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(167,139,250,0.12)">🕸️</div>
+      <h3>Attention</h3>
+      <p>The core mechanism. Each token "looks at" every other token to understand context. "bank" in "river bank" attends differently than in "bank account." This is what makes LLMs understand meaning.</p>
+      <span class="tag" style="background:rgba(167,139,250,0.12);color:var(--purple)">Context understanding</span>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(34,211,238,0.12)">⚡</div>
+      <h3>Generation</h3>
+      <p>The model predicts the next token by scoring every token in its vocabulary (~50,000). The chosen token is fed back in, and the process repeats until it generates a stop token.</p>
+      <span class="tag" style="background:rgba(34,211,238,0.12);color:var(--accent2)">One token at a time</span>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 2: Tokenization -->
+<section class="section">
+  <div class="section-label">Section 02</div>
+  <h2>Tokenization — how text becomes numbers</h2>
+  <p class="section-intro">Everything the model sees is integers. Understanding tokenization explains why models struggle with character-level tasks and why some languages are more expensive.</p>
+
+  <p style="font-size:13px;color:var(--muted);margin-bottom:1rem;">Hover the tokens below to see their integer IDs (GPT-2 style tokenizer):</p>
+  <div class="token-demo">
+    <p style="font-size:12px;color:var(--muted);margin-bottom:0.75rem;">Phrase: "The quick brown fox jumps over the lazy dog"</p>
+    <div class="token-row" id="token-row">
+      <span class="token-chip" style="background:rgba(99,102,241,0.2);color:#c4b5fd" title="ID: 464">The <span class="token-id">#464</span></span>
+      <span class="token-chip" style="background:rgba(34,211,238,0.2);color:#67e8f9" title="ID: 2068"> quick <span class="token-id">#2068</span></span>
+      <span class="token-chip" style="background:rgba(16,185,129,0.2);color:#6ee7b7" title="ID: 9060"> brown <span class="token-id">#9060</span></span>
+      <span class="token-chip" style="background:rgba(245,158,11,0.2);color:#fcd34d" title="ID: 21831"> fox <span class="token-id">#21831</span></span>
+      <span class="token-chip" style="background:rgba(244,63,94,0.2);color:#fda4af" title="ID: 18045"> jumps <span class="token-id">#18045</span></span>
+      <span class="token-chip" style="background:rgba(167,139,250,0.2);color:#c4b5fd" title="ID: 625"> over <span class="token-id">#625</span></span>
+      <span class="token-chip" style="background:rgba(99,102,241,0.2);color:#a5b4fc" title="ID: 262"> the <span class="token-id">#262</span></span>
+      <span class="token-chip" style="background:rgba(34,211,238,0.2);color:#67e8f9" title="ID: 16931"> lazy <span class="token-id">#16931</span></span>
+      <span class="token-chip" style="background:rgba(16,185,129,0.2);color:#6ee7b7" title="ID: 3290"> dog <span class="token-id">#3290</span></span>
+    </div>
+    <p style="font-size:12px;color:var(--muted);">9 words → 9 tokens (English maps cleanly). The same sentence in a lower-resource language might be 15-25 tokens.</p>
+  </div>
+
+  <div class="card-grid" style="margin-top:1.5rem;">
+    <div class="card">
+      <h3>BPE Tokenization</h3>
+      <p>Byte Pair Encoding starts with individual characters and merges the most frequent pairs iteratively. Produces a vocabulary of ~50,000 subword units. Used by GPT models and most modern LLMs.</p>
+    </div>
+    <div class="card">
+      <h3>Why token count matters</h3>
+      <p>You pay per token in API calls. Context limits are in tokens, not words. A 128K context window ≈ 96,000 words. Approximately 1 English word = 1.3 tokens on average.</p>
+      <span class="tag" style="background:rgba(245,158,11,0.12);color:var(--accent3)">1 word ≈ 1.3 tokens</span>
+    </div>
+    <div class="card">
+      <h3>Language efficiency gap</h3>
+      <p>English is well-represented in training data — it tokenizes efficiently. Chinese, Arabic, and many other languages require more tokens per word, increasing cost and reducing effective context.</p>
+    </div>
+    <div class="card">
+      <h3>Tokenization quirks</h3>
+      <p>LLMs struggle with counting characters or reversing strings because they operate on tokens, not individual characters. "strawberry" is ["str", "aw", "berry"] — the model can't easily count the 'r's.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 3: Attention -->
+<section class="section">
+  <div class="section-label">Section 03</div>
+  <h2>Attention mechanism — how the model connects words</h2>
+  <p class="section-intro">Self-attention is the breakthrough that made modern LLMs possible. It allows every token to directly relate to every other token, regardless of distance.</p>
+
+  <p style="font-size:13px;color:var(--muted);margin-bottom:0.75rem;">Attention grid: darker cells = stronger attention between token pairs (example for "The cat sat on the mat")</p>
+  <div class="attn-words">
+    <span class="attn-word">The</span><span class="attn-word">cat</span><span class="attn-word">sat</span><span class="attn-word">on</span><span class="attn-word">mat</span>
+  </div>
+  <div class="attention-viz" id="attn-grid"></div>
+
+  <div class="card-grid" style="margin-top:1.5rem;">
+    <div class="card">
+      <h3>Q, K, V — the three projections</h3>
+      <p>Each token is projected into three vectors: Query (what am I looking for?), Key (what do I offer?), Value (what information do I carry?). Attention score = softmax(Q·Kᵀ / √d) · V</p>
+    </div>
+    <div class="card">
+      <h3>Multi-head attention</h3>
+      <p>Instead of one attention pattern, the model runs H parallel "heads" with different projections. Each head learns a different type of relationship: syntax, semantics, coreference, positional patterns.</p>
+    </div>
+    <div class="card">
+      <h3>KV Cache — why inference is fast</h3>
+      <p>During generation, the Key and Value matrices for previous tokens don't change. Caching them avoids recomputing the full attention for every new token. KV cache is why inference scales well for long contexts.</p>
+      <span class="tag" style="background:rgba(16,185,129,0.12);color:var(--green)">Critical for speed</span>
+    </div>
+  </div>
+
+  <div class="code-block" style="margin-top:1.5rem;"><span class="cc"># Simplified self-attention (scaled dot-product)</span>
+<span class="ck">import</span> torch
+<span class="ck">import</span> torch.nn.functional as F
+
+<span class="ck">def</span> <span class="cf">self_attention</span>(Q, K, V):
+    d_k = Q.<span class="cf">shape</span>[-<span class="cn">1</span>]
+    <span class="cc"># Q·Kᵀ gives us similarity scores between all token pairs</span>
+    scores = <span class="cf">torch.matmul</span>(Q, K.<span class="cf">transpose</span>(-<span class="cn">2</span>, -<span class="cn">1</span>)) / (d_k ** <span class="cn">0.5</span>)
+    weights = F.<span class="cf">softmax</span>(scores, dim=-<span class="cn">1</span>)  <span class="cc"># normalise to probabilities</span>
+    <span class="ck">return</span> <span class="cf">torch.matmul</span>(weights, V)  <span class="cc"># weighted sum of values</span></div>
+</section>
+
+<!-- SECTION 4: Transformer Architecture -->
+<section class="section">
+  <div class="section-label">Section 04</div>
+  <h2>Transformer architecture — layer by layer</h2>
+  <p class="section-intro">A transformer consists of N identical layers stacked on top of each other. Click each component to understand what it does.</p>
+
+  <div class="arch-step" onclick="toggleArch(this)">
+    <div class="arch-step-header">
+      <span class="as-num">Input</span>
+      <span class="as-name">Token + Positional Embeddings</span>
+      <span class="as-chevron">▾</span>
+    </div>
+    <div class="arch-step-body">
+      <p>Tokens are converted to dense vectors (embeddings) of dimension d_model (e.g. 4096 for LLaMA-3 8B). Positional encodings are added to tell the model where each token is in the sequence. Without position info, "dog bites man" and "man bites dog" would look identical.</p>
+    </div>
+  </div>
+
+  <div class="arch-step" onclick="toggleArch(this)">
+    <div class="arch-step-header">
+      <span class="as-num">Layer ×N</span>
+      <span class="as-name">Multi-head Self-attention</span>
+      <span class="as-chevron">▾</span>
+    </div>
+    <div class="arch-step-body">
+      <p>Each token attends to every other token in the context. H parallel heads (e.g. 32 heads in LLaMA-3 8B) each learn different relationship patterns. Results are concatenated and projected back to d_model. This is the most computationally expensive part — O(n²) in sequence length.</p>
+    </div>
+  </div>
+
+  <div class="arch-step" onclick="toggleArch(this)">
+    <div class="arch-step-header">
+      <span class="as-num">Layer ×N</span>
+      <span class="as-name">Add &amp; Layer Norm</span>
+      <span class="as-chevron">▾</span>
+    </div>
+    <div class="arch-step-body">
+      <p>A residual connection adds the input to the attention output (prevents vanishing gradients in deep networks). Layer normalisation then stabilises training by normalising across the feature dimension. These are critical for training 100B+ parameter models stably.</p>
+    </div>
+  </div>
+
+  <div class="arch-step" onclick="toggleArch(this)">
+    <div class="arch-step-header">
+      <span class="as-num">Layer ×N</span>
+      <span class="as-name">Feed-forward Network (FFN)</span>
+      <span class="as-chevron">▾</span>
+    </div>
+    <div class="arch-step-body">
+      <p>Two linear layers with a non-linearity (GELU or SiLU) between them. Projects to 4× d_model then back. This is where most factual knowledge is believed to be stored. In LLaMA-3 8B: d_model=4096, FFN intermediate=14336. Another residual + layer norm follows.</p>
+    </div>
+  </div>
+
+  <div class="arch-step" onclick="toggleArch(this)">
+    <div class="arch-step-header">
+      <span class="as-num">Output</span>
+      <span class="as-name">Language Model Head</span>
+      <span class="as-chevron">▾</span>
+    </div>
+    <div class="arch-step-body">
+      <p>A final linear layer projects from d_model to vocab_size (~32,000 to 128,000). Softmax converts to probabilities over the entire vocabulary. The next token is sampled based on these probabilities and temperature. Then everything repeats for the next token.</p>
+    </div>
+  </div>
+
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1.25rem 1.5rem;margin-top:1.5rem;">
+    <p style="font-size:13px;font-weight:600;margin-bottom:0.75rem;">Key numbers across model families</p>
+    <table class="scale-table" style="margin-top:0;">
+      <thead><tr><th>Model</th><th>Parameters</th><th>Layers</th><th>d_model</th><th>Heads</th></tr></thead>
+      <tbody>
+        <tr><td>GPT-3.5 (175B)</td><td>175B</td><td>96</td><td>12,288</td><td>96</td></tr>
+        <tr><td>LLaMA-3 8B</td><td>8B</td><td>32</td><td>4,096</td><td>32</td></tr>
+        <tr><td>LLaMA-3 70B</td><td>70B</td><td>80</td><td>8,192</td><td>64</td></tr>
+        <tr><td>Mistral 7B</td><td>7B</td><td>32</td><td>4,096</td><td>32</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- SECTION 5: Key Parameters -->
+<section class="section">
+  <div class="section-label">Section 05</div>
+  <h2>Key parameters — temperature, top-p, context window</h2>
+  <p class="section-intro">The knobs you turn when using an LLM. Understanding them helps you predict and control model behaviour.</p>
+
+  <div class="tab-controls">
+    <button class="tab-btn active" onclick="switchTabLocal(this,'p-temp')">Temperature</button>
+    <button class="tab-btn" onclick="switchTabLocal(this,'p-topp')">Top-p (Nucleus)</button>
+    <button class="tab-btn" onclick="switchTabLocal(this,'p-ctx')">Context Window</button>
+    <button class="tab-btn" onclick="switchTabLocal(this,'p-topk')">Top-k</button>
+  </div>
+
+  <div id="p-temp" class="tab-panel active">
+    <div class="param-demo">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:0.75rem;">Temperature scales the logits before softmax. Higher temperature = flatter distribution = more random.</p>
+      <div class="temp-bar-wrap">
+        <div class="temp-labels">
+          <span>0 — Deterministic</span>
+          <span>1 — Balanced</span>
+          <span>2 — Chaotic</span>
+        </div>
+        <div class="temp-bar"><div class="temp-marker" id="temp-marker" style="left:50%"></div></div>
+        <input type="range" min="0" max="100" value="50" style="width:100%;margin-top:0.5rem;cursor:pointer;accent-color:var(--accent);" oninput="document.getElementById('temp-marker').style.left=this.value+'%';document.getElementById('temp-val').textContent=(this.value/50).toFixed(1);">
+        <p style="font-size:12px;color:var(--muted);margin-top:0.5rem;">Current: <span id="temp-val" style="color:var(--accent2);font-family:var(--mono);">1.0</span></p>
+      </div>
+    </div>
+    <div class="card-grid" style="margin-top:1rem;">
+      <div class="card"><h3>Temperature = 0</h3><p>Always picks the highest-probability token. Fully deterministic. Use for tasks needing consistent, correct outputs: code generation, data extraction, classification.</p></div>
+      <div class="card"><h3>Temperature = 0.7–1.0</h3><p>Balanced creativity and coherence. Good for most chat applications, writing assistance, and summarisation where some variation is desirable.</p></div>
+      <div class="card"><h3>Temperature > 1.0</h3><p>Increasingly random. Useful for brainstorming and creative writing. Above 1.5 the output often becomes incoherent. Almost never useful for production systems.</p></div>
+    </div>
+  </div>
+
+  <div id="p-topp" class="tab-panel">
+    <div class="param-demo">
+      <p style="font-size:13px;color:var(--muted);">Top-p (nucleus sampling) restricts token selection to the smallest set of tokens whose cumulative probability exceeds p. At p=0.9, only tokens in the "90% probability mass" are considered.</p>
+    </div>
+    <div class="card-grid" style="margin-top:1rem;">
+      <div class="card"><h3>How it works</h3><p>Sort tokens by probability. Keep adding tokens until cumulative sum exceeds p. Sample only from this "nucleus." This dynamically adjusts the number of candidates based on the distribution shape.</p></div>
+      <div class="card"><h3>Typical values</h3><p>p=0.9 to 0.95 is the most common production setting. Combining top-p with temperature (e.g. temp=0.7, top-p=0.9) gives fine-grained control. They can conflict — usually set one or the other.</p></div>
+    </div>
+  </div>
+
+  <div id="p-ctx" class="tab-panel">
+    <div class="param-demo">
+      <p style="font-size:13px;color:var(--muted);">The context window is the maximum number of tokens the model can process in a single forward pass — including both the prompt and the generated response.</p>
+    </div>
+    <table class="scale-table" style="margin-top:1rem;">
+      <thead><tr><th>Model</th><th>Context Window</th><th>Approx Words</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>GPT-4o</td><td>128K tokens</td><td>~96K words</td><td>Full cost at max context</td></tr>
+        <tr><td>Claude 3.5 Sonnet</td><td>200K tokens</td><td>~150K words</td><td>~450 pages</td></tr>
+        <tr><td>Gemini 1.5 Pro</td><td>1M tokens</td><td>~750K words</td><td>1 hour of video</td></tr>
+        <tr><td>LLaMA-3 8B</td><td>8K tokens</td><td>~6K words</td><td>Open-source baseline</td></tr>
+        <tr><td>Mistral 7B v0.3</td><td>32K tokens</td><td>~24K words</td><td>Good open-source option</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:13px;color:var(--muted);margin-top:1rem;">Important: attention is O(n²) in sequence length. Doubling the context roughly 4× the attention computation. Long-context models use tricks like ring attention, sparse attention, and sliding window attention to manage this.</p>
+  </div>
+
+  <div id="p-topk" class="tab-panel">
+    <div class="param-demo">
+      <p style="font-size:13px;color:var(--muted);">Top-k limits token sampling to the K most probable tokens at each step, regardless of their probabilities. A simpler alternative to top-p.</p>
+    </div>
+    <div class="card-grid" style="margin-top:1rem;">
+      <div class="card"><h3>When to use top-k</h3><p>k=50 is a common default. Works well when the probability distribution is fairly flat. Can produce unexpected results if k cuts off genuinely probable tokens in a peaked distribution.</p></div>
+      <div class="card"><h3>Top-k vs top-p</h3><p>Top-p is generally preferred because it adapts to the distribution shape. When the model is confident (one token has 80% prob), top-p naturally restricts more than top-k does.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 6: Model families -->
+<section class="section">
+  <div class="section-label">Section 06</div>
+  <h2>Model families comparison</h2>
+  <p class="section-intro">The major LLMs as of mid-2025 — strengths, context windows, and best use cases.</p>
+
+  <table class="scale-table">
+    <thead>
+      <tr><th>Model</th><th>Context</th><th>Strengths</th><th>Best Use Case</th><th>Pricing</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>GPT-4o</strong></td>
+        <td><span class="badge" style="background:rgba(99,102,241,0.15);color:#a5b4fc">128K</span></td>
+        <td>Reasoning, code, multimodal</td>
+        <td>Complex coding, analysis, vision tasks</td>
+        <td>$2.50/$10 per M tokens</td>
+      </tr>
+      <tr>
+        <td><strong>Claude 3.5 Sonnet</strong></td>
+        <td><span class="badge" style="background:rgba(99,102,241,0.15);color:#a5b4fc">200K</span></td>
+        <td>Long-context, nuanced writing, safety</td>
+        <td>Document analysis, long-form generation</td>
+        <td>$3/$15 per M tokens</td>
+      </tr>
+      <tr>
+        <td><strong>LLaMA 3 70B</strong></td>
+        <td><span class="badge" style="background:rgba(16,185,129,0.15);color:var(--green)">128K</span></td>
+        <td>Open weights, fine-tunable, strong reasoning</td>
+        <td>Self-hosted, fine-tuning, privacy-critical</td>
+        <td>Self-hosted / Groq API</td>
+      </tr>
+      <tr>
+        <td><strong>Mistral 7B / 8×7B</strong></td>
+        <td><span class="badge" style="background:rgba(16,185,129,0.15);color:var(--green)">32K</span></td>
+        <td>Efficient, fast, MoE architecture</td>
+        <td>Low-latency inference, edge deployment</td>
+        <td>Self-hosted, very cheap API</td>
+      </tr>
+      <tr>
+        <td><strong>Gemini 1.5 Pro</strong></td>
+        <td><span class="badge" style="background:rgba(245,158,11,0.15);color:var(--accent3)">1M</span></td>
+        <td>Extreme long context, multimodal</td>
+        <td>Entire codebase analysis, hour-long videos</td>
+        <td>$1.25/$5 per M tokens</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- SECTION 7: Decision tree -->
+<section class="section">
+  <div class="section-label">Section 07</div>
+  <h2>Fine-tuning vs prompting vs RAG — a decision tree</h2>
+  <p class="section-intro">How to choose the right technique for each problem.</p>
+
+  <div class="decision-tree">
+    <div class="dt-node question">
+      <div class="dt-q">Does the base model already know how to do this task?</div>
+      <div class="dt-branches">
+        <div>
+          <div class="dt-branch-label">Yes, it knows</div>
+          <div class="dt-node answer-prompt"><div class="dt-q">Need domain knowledge?</div>
+            <div class="dt-branches">
+              <div><div class="dt-branch-label">No</div><div class="dt-node answer-prompt"><div class="dt-answer" style="color:var(--green)">Prompt engineering only</div><p style="font-size:12px;color:var(--muted);">Zero-shot or few-shot prompting. Cheapest and fastest.</p></div></div>
+              <div><div class="dt-branch-label">Yes</div><div class="dt-node answer-rag"><div class="dt-answer" style="color:var(--accent2)">RAG</div><p style="font-size:12px;color:var(--muted);">Build a retrieval pipeline to inject domain knowledge at query time.</p></div></div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="dt-branch-label">No, it doesn't know how</div>
+          <div class="dt-node answer-ft"><div class="dt-q">Do you have training data?</div>
+            <div class="dt-branches">
+              <div><div class="dt-branch-label">Yes, 1K+ examples</div><div class="dt-node answer-ft"><div class="dt-answer" style="color:var(--purple)">Fine-tune (LoRA)</div><p style="font-size:12px;color:var(--muted);">Teach the model the new skill. Start with PEFT/LoRA.</p></div></div>
+              <div><div class="dt-branch-label">No data</div><div class="dt-node answer-prompt"><div class="dt-answer" style="color:var(--accent3)">Better prompts + RAG</div><p style="font-size:12px;color:var(--muted);">Try chain-of-thought prompting and RAG before collecting training data.</p></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 8: End-to-end guide -->
+<section class="section">
+  <div class="section-label">Section 08</div>
+  <h2>How to choose and use the right LLM for a task</h2>
+  <p class="section-intro">A practical decision process for selecting and configuring an LLM for production use.</p>
+
+  <div class="answer-box">
+    <p><strong style="color:var(--text)">Step 1 — Define the task and output format precisely.</strong> Is this classification, generation, extraction, or reasoning? What does a "correct" output look like? This shapes every subsequent decision including model selection, temperature, and evaluation approach.</p>
+    <p><strong style="color:var(--text)">Step 2 — Start with the cheapest model that could plausibly work.</strong> Run your benchmark against GPT-4o mini, LLaMA-3 8B, or Mistral 7B first. Only upgrade to larger, more expensive models when a smaller model provably fails. Most tasks don't require the largest model.</p>
+    <p><strong style="color:var(--text)">Step 3 — Set temperature by task type.</strong> Extraction, classification, and code generation: temperature 0. Writing and summarisation: 0.5-0.8. Brainstorming: 0.8-1.0. Do not use temperature > 1.0 in production without a very specific reason.</p>
+    <p><strong style="color:var(--text)">Step 4 — Estimate token usage before writing a line of code.</strong> Count prompt tokens for typical requests. Multiply by expected daily request volume and price per million tokens. Add context window headroom for long conversations. Budget surprises at scale are painful.</p>
+    <p><strong style="color:var(--text)">Step 5 — Use the KV cache and batching.</strong> For repeated system prompts, place static content at the beginning of the prompt (cache-friendly). Batch multiple requests together when latency allows. These two optimisations often cut inference costs by 50-70%.</p>
+    <p><strong style="color:var(--text)">Step 6 — Monitor and iterate.</strong> Log every request and response. Track latency percentiles, error rates, and token counts. Measure quality with an offline golden set weekly. LLM APIs change and model quality drifts with new versions — continuous eval is non-negotiable.</p>
+  </div>
+</section>
+
+<footer>
+  <span>Kuldeep Rao</span> · LLM Architecture Basics
+</footer>
+
+<script>
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.section').forEach(s => observer.observe(s));
+
+// Build attention visualization
+const words = ['The','cat','sat','on','mat'];
+const attnWeights = [
+  [0.9,0.1,0.0,0.0,0.0],
+  [0.1,0.8,0.05,0.0,0.05],
+  [0.05,0.2,0.7,0.0,0.05],
+  [0.05,0.1,0.1,0.6,0.15],
+  [0.05,0.1,0.1,0.15,0.6]
+];
+const grid = document.getElementById('attn-grid');
+if (grid) {
+  for (let i = 0; i < 5; i++) {
+    for (let j = 0; j < 5; j++) {
+      const cell = document.createElement('div');
+      cell.className = 'attn-cell';
+      const w = attnWeights[i][j];
+      const alpha = Math.round(w * 220);
+      cell.style.background = `rgba(99,102,241,${w.toFixed(2)})`;
+      cell.style.border = '1px solid rgba(255,255,255,0.05)';
+      cell.title = `"${words[i]}" → "${words[j]}": ${(w*100).toFixed(0)}%`;
+      cell.textContent = w > 0.3 ? words[j] : '';
+      cell.style.fontSize = '9px';
+      grid.appendChild(cell);
+    }
+  }
+}
+
+function toggleArch(el) {
+  el.classList.toggle('open');
+}
+
+function switchTabLocal(btn, id) {
+  const controls = btn.closest('.tab-controls');
+  controls.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  let el = controls.nextElementSibling;
+  while (el && el.classList.contains('tab-panel')) {
+    el.classList.remove('active');
+    el = el.nextElementSibling;
+  }
+  document.getElementById(id).classList.add('active');
+}
+</script>
+</body>
+</html>

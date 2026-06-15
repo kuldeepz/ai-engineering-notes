@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Team Structure — Building and Scaling AI Engineering Teams</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+:root{--bg:#0f1117;--bg2:#161b27;--bg3:#1e2535;--border:rgba(255,255,255,0.08);--text:#e2e8f0;--muted:#8892a4;--accent:#6366f1;--accent2:#22d3ee;--accent3:#f59e0b;--green:#10b981;--red:#f43f5e;--purple:#a78bfa;--font:'Inter',sans-serif;--mono:'JetBrains Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.7;overflow-x:hidden}
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4rem 2rem;position:relative;overflow:hidden}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(99,102,241,0.07) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,0.07) 1px,transparent 1px);background-size:48px 48px;mask-image:radial-gradient(ellipse at center,black 30%,transparent 80%)}
+.hero-glow{position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(99,102,241,0.12) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);border-radius:100px;padding:6px 16px;font-size:12px;font-weight:500;color:#a5b4fc;margin-bottom:2rem;letter-spacing:0.05em;text-transform:uppercase}
+.hero h1{font-size:clamp(2.5rem,6vw,4.5rem);font-weight:600;letter-spacing:-0.03em;line-height:1.1;margin-bottom:1.5rem;position:relative}
+.hero h1 span{background:linear-gradient(135deg,#6366f1,#22d3ee);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero p{font-size:1.15rem;color:var(--muted);max-width:600px;margin-bottom:3rem;position:relative}
+.hero-stats{display:flex;gap:3rem;position:relative;flex-wrap:wrap;justify-content:center}
+.stat{text-align:center}.stat-num{font-size:2rem;font-weight:600;color:var(--accent2);font-family:var(--mono)}.stat-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em}
+.scroll-hint{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);color:var(--muted);font-size:12px;display:flex;flex-direction:column;align-items:center;gap:8px;animation:bounce 2s ease-in-out infinite}
+@keyframes bounce{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(8px)}}
+.section{max-width:960px;margin:0 auto;padding:5rem 2rem;opacity:0;transform:translateY(30px);transition:opacity 0.6s ease,transform 0.6s ease}
+.section.visible{opacity:1;transform:translateY(0)}
+.section-label{font-size:11px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:0.75rem}
+.section h2{font-size:clamp(1.6rem,3vw,2.2rem);font-weight:600;letter-spacing:-0.02em;margin-bottom:1rem;line-height:1.2}
+.section-intro{color:var(--muted);font-size:1.05rem;max-width:700px;margin-bottom:3rem}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1.5rem;transition:border-color 0.2s,transform 0.2s}
+.card:hover{border-color:rgba(99,102,241,0.3);transform:translateY(-2px)}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem}
+.card-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:1rem}
+.card h3{font-size:1rem;font-weight:600;margin-bottom:0.5rem}.card p{font-size:13px;color:var(--muted);line-height:1.6}
+.tag{display:inline-block;font-size:11px;font-weight:500;padding:3px 10px;border-radius:100px;margin-top:0.75rem}
+.tab-controls{display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1.5rem;border-bottom:1px solid var(--border);padding-bottom:1rem}
+.tab-btn{padding:8px 18px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--muted);font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.2s}
+.tab-btn.active{background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.3);color:#a5b4fc}
+.tab-btn:hover:not(.active){color:var(--text)}.tab-panel{display:none;animation:fadeIn 0.3s ease}.tab-panel.active{display:block}
+.scale-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:1.5rem}
+.scale-table th{text-align:left;padding:10px 16px;background:var(--bg3);color:var(--muted);font-weight:500;font-size:11px;letter-spacing:0.08em;text-transform:uppercase}
+.scale-table th:first-child{border-radius:8px 0 0 8px}.scale-table th:last-child{border-radius:0 8px 8px 0}
+.scale-table td{padding:12px 16px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.6}
+.scale-table tr:last-child td{border-bottom:none}.scale-table tr:hover td{background:rgba(255,255,255,0.02)}
+.answer-box{background:linear-gradient(135deg,rgba(99,102,241,0.08),rgba(34,211,238,0.05));border:1px solid rgba(99,102,241,0.25);border-radius:16px;padding:2rem;margin-top:2rem}
+.answer-box p{font-size:14px;color:var(--muted);line-height:1.9}.answer-box p+p{margin-top:0.75rem}
+.badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:500}
+.divider{width:100%;height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:2rem 0}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:3px}
+/* Role card expand */
+.role-card{cursor:pointer;user-select:none}
+.role-card .card-header{display:flex;align-items:center;gap:0.75rem}
+.role-card .expand-icon{margin-left:auto;font-size:20px;color:var(--muted);transition:transform 0.2s,color 0.2s;flex-shrink:0;line-height:1}
+.role-card.open .expand-icon{transform:rotate(45deg);color:var(--accent)}
+.role-detail{margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);display:none}
+.role-card.open .role-detail{display:block}
+.role-detail p{font-size:13px;color:var(--muted);margin-bottom:0.5rem}
+.role-detail p:last-child{margin-bottom:0}
+.role-detail strong{color:var(--text)}
+/* Org chart */
+.org-chart{display:flex;flex-direction:column;align-items:center;gap:0;margin:1.5rem 0}
+.org-row{display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap}
+.org-connector{width:1px;height:24px;background:rgba(99,102,241,0.3)}
+.org-node{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.5rem 1rem;font-size:12px;font-weight:500;text-align:center;min-width:100px}
+.org-node.top{background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.4);color:#a5b4fc}
+/* Pro/con grid */
+.pro-con{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem}
+.pro-con-box{background:var(--bg3);border-radius:12px;padding:1rem}
+.pro-con-box h4{font-size:11px;font-weight:600;margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:0.08em}
+.pro-con-box ul{list-style:none;font-size:13px;color:var(--muted)}
+.pro-con-box ul li{margin-bottom:0.2rem}
+.pros h4{color:var(--green)}.cons h4{color:var(--red)}
+.pros li::before{content:"+ ";color:var(--green)}.cons li::before{content:"- ";color:var(--red)}
+.tab-note{margin-top:1rem;font-size:13px;color:var(--muted);background:var(--bg3);border-radius:12px;padding:1rem}
+/* Stage cards */
+.stage-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1.75rem}
+.stage-num{font-size:3rem;font-weight:700;font-family:var(--mono);line-height:1;margin-bottom:0.75rem}
+.s1 .stage-num{color:rgba(34,211,238,0.3)}.s2 .stage-num{color:rgba(99,102,241,0.3)}.s3 .stage-num{color:rgba(167,139,250,0.3)}
+.metric-pill{display:inline-flex;align-items:center;gap:0.3rem;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:3px 10px;font-size:11px;margin:2px;color:var(--muted)}
+/* Platform grid */
+.platform-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:0.75rem}
+.platform-item{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1rem;text-align:center;transition:border-color 0.2s}
+.platform-item:hover{border-color:rgba(99,102,241,0.3)}
+.platform-item .pi-icon{font-size:24px;margin-bottom:0.5rem}
+.platform-item h4{font-size:13px;font-weight:600;margin-bottom:0.25rem}
+.platform-item p{font-size:11px;color:var(--muted)}
+footer{text-align:center;padding:3rem 2rem;color:var(--muted);font-size:13px;border-top:1px solid var(--border);margin-top:2rem}
+footer span{color:var(--accent);font-weight:500}
+@media(max-width:640px){.hero-stats{gap:1.5rem}.pro-con{grid-template-columns:1fr}.tab-btn{padding:6px 12px;font-size:12px}}
+@media(prefers-reduced-motion:reduce){*,.section{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-badge">Team Design · Roles · Platform · Embedded · Leadership</div>
+  <h1>AI Team<br><span>Structure</span></h1>
+  <p>Building and Scaling AI Engineering Teams — from first hire to a 50-person AI organisation</p>
+  <div class="hero-stats">
+    <div class="stat"><div class="stat-num">4</div><div class="stat-label">Team Models</div></div>
+    <div class="stat"><div class="stat-num">8</div><div class="stat-label">Core Roles</div></div>
+    <div class="stat"><div class="stat-num">3</div><div class="stat-label">Maturity Stages</div></div>
+    <div class="stat"><div class="stat-num">1</div><div class="stat-label">Platform</div></div>
+  </div>
+  <div class="scroll-hint">scroll ↓</div>
+</div>
+
+<!-- Section 1: Foundation -->
+<section class="section">
+  <div class="section-label">Foundation</div>
+  <h2>Why AI teams fail without the right structure</h2>
+  <p class="section-intro">Most AI team failures are not technical — they are organisational. The wrong structure creates bottlenecks, misaligned incentives, and projects that never reach production.</p>
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-icon" style="background:rgba(244,63,94,0.12)">🔬</div>
+      <h3>Data scientists without engineers</h3>
+      <p>Models live in notebooks. Without software engineers and MLOps, there is no path to production. Proof of concepts never become products.</p>
+      <span class="tag" style="background:rgba(244,63,94,0.12);color:#fda4af">Models Never Ship</span>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(245,158,11,0.12)">⚙️</div>
+      <h3>Engineers without data scientists</h3>
+      <p>Software ships but ML quality is poor. Engineers optimise for code quality, not model performance. No one owns prediction accuracy or reliability.</p>
+      <span class="tag" style="background:rgba(245,158,11,0.12);color:#fcd34d">No ML Quality</span>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(167,139,250,0.12)">🏗️</div>
+      <h3>No platform team</h3>
+      <p>Every team rebuilds feature pipelines, model registries, and serving infrastructure from scratch. 80% of effort goes to plumbing instead of value delivery.</p>
+      <span class="tag" style="background:rgba(167,139,250,0.12);color:#c4b5fd">Duplicated Effort</span>
+    </div>
+  </div>
+</section>
+
+<!-- Section 2: Core Roles -->
+<section class="section">
+  <div class="section-label">Core Roles</div>
+  <h2>8 roles every mature AI team needs — click each</h2>
+  <p class="section-intro">Each role fills a distinct gap. Missing any one creates a systematic bottleneck that slows every project across the organisation.</p>
+  <div class="card-grid">
+
+    <div class="card role-card" onclick="toggleRole(this)">
+      <div class="card-header">
+        <div class="card-icon" style="background:rgba(99,102,241,0.12);margin-bottom:0">🤖</div>
+        <h3>ML Engineer</h3>
+        <span class="expand-icon">+</span>
+      </div>
+      <div class="role-detail">
+        <p><strong>Day to day:</strong> Training, evaluating, and iterating on models; writing production feature engineering code; driving models from notebook to serving.</p>
+        <p><strong>Must-have skills:</strong> Python, PyTorch/TensorFlow, feature engineering, distributed training, model serving APIs.</p>
+        <p><strong>Hiring mistake:</strong> Hiring only researchers — you need engineers who write production-grade code, not just notebooks.</p>
+      </div>
+    </div>
+
+    <div class="card role-card" onclick="toggleRole(this)">
+      <div class="card-header">
+        <div class="card-icon" style="background:rgba(34,211,238,0.12);margin-bottom:0">📊</div>
+        <h3>Data Scientist</h3>
+        <span class="expand-icon">+</span>
+      </div>
+      <div class="role-detail">
+        <p><strong>Day to day:</strong> Exploratory analysis, hypothesis formation, experiment design, model selection, and communicating findings to stakeholders.</p>
+        <p><strong>Must-have skills:</strong> Statistics, Python/R, SQL, A/B experiment design, data storytelling.</p>
+        <p><strong>Hiring mistake:</strong> Expecting them to deploy — data scientists need ML engineers to productionise their work.</p>
+      </div>
+    </div>
+
+    <div class="card role-card" onclick="toggleRole(this)">
+      <div class="card-header">
+        <div class="card-icon" style="background:rgba(16,185,129,0.12);margin-bottom:0">📱</div>
+        <h3>AI Product Manager</h3>
+        <span class="expand-icon">+</span>
+      </div>
+      <div class="role-detail">
+        <p><strong>Day to day:</strong> Translating business problems to ML problems, defining success metrics, managing expectations around probabilistic outputs.</p>
+        <p><strong>Must-have skills:</strong> ML fundamentals, stakeholder management, metric definition, data literacy.</p>
+        <p><strong>Hiring mistake:</strong> Hiring a regular PM — they must understand ML uncertainty and how to evaluate models.</p>
+      </div>
+    </div>
+
+    <div class="card role-card" onclick="toggleRole(this)">
+      <div class="card-header">
+        <div class="card-icon" style="background:rgba(245,158,11,0.12);margin-bottom:0">🔧</div>
+        <h3>ML Platform Engineer</h3>
+        <span class="expand-icon">+</span>
+      </div>
+      <div class="role-detail">
+        <p><strong>Day to day:</strong> Building and maintaining feature stores, model registries, experiment tracking, training pipelines, and serving infrastructure.</p>
+        <p><strong>Must-have skills:</strong> Kubernetes, distributed systems, CI/CD, Spark, Kubeflow or similar, cloud platforms.</p>
+        <p><strong>Hiring mistake:</strong> Hiring too late — platform debt compounds and slows every team member.</p>
+      </div>
+    </div>
+
+    <div class="card role-card" onclick="toggleRole(this)">
+      <div class="card-header">
+        <div class="card-icon" style="background:rgba(167,139,250,0.12);margin-bottom:0">🗄️</div>
+        <h3>Data Engineer</h3>
+        <span class="expand-icon">+</span>
+      </div>
+      <div class="role-detail">
+        <p><strong>Day to day:</strong> Building data pipelines, ensuring data quality, managing data warehouses, and creating feature pipelines for training.</p>
+        <p><strong>Must-have skills:</strong> SQL, Spark, dbt, Airflow/Prefect, data modelling, Kafka for streaming.</p>
+        <p><strong>Hiring mistake:</strong> Treating as optional — without clean reliable data, no ML project succeeds.</p>
+      </div>
+    </div>
+
+    <div class="card role-card" onclick="toggleRole(this)">
+      <div class="card-header">
+        <div class="card-icon" style="background:rgba(244,63,94,0.12);margin-bottom:0">🛡️</div>
+        <h3>AI Safety / Ethics</h3>
+        <span class="expand-icon">+</span>
+      </div>
+      <div class="role-detail">
+        <p><strong>Day to day:</strong> Bias auditing, fairness testing, red teaming, policy compliance reviews, adversarial testing of AI systems.</p>
+        <p><strong>Must-have skills:</strong> Fairness metrics, adversarial ML, regulatory frameworks (EU AI Act, GDPR), red teaming.</p>
+        <p><strong>Hiring mistake:</strong> Adding as an afterthought — safety must be embedded from the start, not bolted on.</p>
+      </div>
+    </div>
+
+    <div class="card role-card" onclick="toggleRole(this)">
+      <div class="card-header">
+        <div class="card-icon" style="background:rgba(99,102,241,0.12);margin-bottom:0">🚀</div>
+        <h3>MLOps Engineer</h3>
+        <span class="expand-icon">+</span>
+      </div>
+      <div class="role-detail">
+        <p><strong>Day to day:</strong> CI/CD for ML pipelines, model monitoring, drift detection, A/B testing infrastructure, retraining automation.</p>
+        <p><strong>Must-have skills:</strong> MLflow/W&B, Prometheus/Grafana, Docker/Kubernetes, Python, GitHub Actions.</p>
+        <p><strong>Hiring mistake:</strong> Confusing with DevOps — MLOps requires understanding model behaviour, not just infrastructure.</p>
+      </div>
+    </div>
+
+    <div class="card role-card" onclick="toggleRole(this)">
+      <div class="card-header">
+        <div class="card-icon" style="background:rgba(34,211,238,0.12);margin-bottom:0">👔</div>
+        <h3>AI Engineering Manager</h3>
+        <span class="expand-icon">+</span>
+      </div>
+      <div class="role-detail">
+        <p><strong>Day to day:</strong> Technical roadmapping, team building, cross-functional stakeholder management, unblocking engineers, managing ML uncertainty.</p>
+        <p><strong>Must-have skills:</strong> ML project management, hiring, technical depth to review ML designs, stakeholder communication.</p>
+        <p><strong>Hiring mistake:</strong> Promoting the best data scientist — management needs entirely different skills from technical excellence.</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- Section 3: Team Models -->
+<section class="section" id="models-section">
+  <div class="section-label">Team Models</div>
+  <h2>Four ways to structure an AI team — click each</h2>
+  <p class="section-intro">There is no single right answer. The best model depends on company size, AI maturity, and how central AI is to the business model.</p>
+  <div class="tab-controls">
+    <button class="tab-btn active" onclick="switchTab(this,'tm1','models-section')">Centralised</button>
+    <button class="tab-btn" onclick="switchTab(this,'tm2','models-section')">Embedded</button>
+    <button class="tab-btn" onclick="switchTab(this,'tm3','models-section')">Hub-and-Spoke</button>
+    <button class="tab-btn" onclick="switchTab(this,'tm4','models-section')">AI-First</button>
+  </div>
+
+  <div id="tm1" class="tab-panel active">
+    <div class="org-chart">
+      <div class="org-node top">AI Director / VP AI</div>
+      <div class="org-connector"></div>
+      <div class="org-row">
+        <div class="org-node">ML Research</div>
+        <div class="org-node">ML Engineering</div>
+        <div class="org-node">Data Engineering</div>
+        <div class="org-node">MLOps</div>
+      </div>
+    </div>
+    <div class="pro-con">
+      <div class="pro-con-box pros">
+        <h4>Pros</h4>
+        <ul><li>Deep ML expertise concentrated</li><li>Consistent tooling and standards</li><li>Easy to build platform capabilities</li><li>Strong knowledge sharing</li></ul>
+      </div>
+      <div class="pro-con-box cons">
+        <h4>Cons</h4>
+        <ul><li>Becomes a bottleneck for product teams</li><li>Disconnect from user problems</li><li>Slow to respond to business needs</li><li>Priority conflicts between requestors</li></ul>
+      </div>
+    </div>
+    <div class="tab-note"><strong style="color:var(--text)">When it works:</strong> Early-stage companies building foundational ML, or organisations where AI is a distinct standalone product.<br><strong style="color:var(--text)">Real example:</strong> Google Brain, OpenAI, DeepMind — dedicated research organisations with a clear AI mandate.</div>
+  </div>
+
+  <div id="tm2" class="tab-panel">
+    <div class="org-chart">
+      <div class="org-row">
+        <div class="org-node top">Product Team A<br><small style="color:var(--muted);font-weight:400">+ ML Engineer</small></div>
+        <div class="org-node top">Product Team B<br><small style="color:var(--muted);font-weight:400">+ Data Scientist</small></div>
+        <div class="org-node top">Product Team C<br><small style="color:var(--muted);font-weight:400">+ ML Engineer</small></div>
+      </div>
+    </div>
+    <div class="pro-con">
+      <div class="pro-con-box pros">
+        <h4>Pros</h4>
+        <ul><li>Tight product and user alignment</li><li>Fast iteration cycles</li><li>AI engineers understand context deeply</li><li>No centralised bottleneck</li></ul>
+      </div>
+      <div class="pro-con-box cons">
+        <h4>Cons</h4>
+        <ul><li>Duplicated infrastructure work</li><li>Inconsistent ML practices</li><li>Harder to build deep expertise</li><li>Knowledge silos between teams</li></ul>
+      </div>
+    </div>
+    <div class="tab-note"><strong style="color:var(--text)">When it works:</strong> Mid-size companies with distinct product lines where AI augments existing features rather than being the product.<br><strong style="color:var(--text)">Real example:</strong> Spotify embedded ML engineers across podcast, music discovery, and ads teams.</div>
+  </div>
+
+  <div id="tm3" class="tab-panel">
+    <div class="org-chart">
+      <div class="org-node top">AI Platform Team (Hub)</div>
+      <div class="org-connector"></div>
+      <div class="org-row">
+        <div class="org-node">Search<br><small style="color:var(--muted);font-weight:400">ML Spoke</small></div>
+        <div class="org-node">Recommendations<br><small style="color:var(--muted);font-weight:400">ML Spoke</small></div>
+        <div class="org-node">Ads<br><small style="color:var(--muted);font-weight:400">ML Spoke</small></div>
+        <div class="org-node">Safety<br><small style="color:var(--muted);font-weight:400">ML Spoke</small></div>
+      </div>
+    </div>
+    <div class="pro-con">
+      <div class="pro-con-box pros">
+        <h4>Pros</h4>
+        <ul><li>Shared platform reduces duplication</li><li>Product teams stay autonomous</li><li>Best practices flow from hub</li><li>Scales well past 20 ML engineers</li></ul>
+      </div>
+      <div class="pro-con-box cons">
+        <h4>Cons</h4>
+        <ul><li>Complex governance model</li><li>Platform team prioritisation hard</li><li>Communication overhead increases</li><li>Requires strong platform leadership</li></ul>
+      </div>
+    </div>
+    <div class="tab-note"><strong style="color:var(--text)">When it works:</strong> Mature companies with 20+ ML practitioners across multiple distinct product areas.<br><strong style="color:var(--text)">Real example:</strong> Airbnb, Uber — central ML platform teams serving multiple product verticals independently.</div>
+  </div>
+
+  <div id="tm4" class="tab-panel">
+    <div class="org-chart">
+      <div class="org-row">
+        <div class="org-node top">Every Team Has ML Capability</div>
+      </div>
+      <div class="org-connector"></div>
+      <div class="org-row">
+        <div class="org-node">Shared AI Infrastructure</div>
+        <div class="org-node">AI Governance</div>
+        <div class="org-node">Foundation Models</div>
+      </div>
+    </div>
+    <div class="pro-con">
+      <div class="pro-con-box pros">
+        <h4>Pros</h4>
+        <ul><li>AI embedded in every decision</li><li>Maximum product velocity</li><li>ML-by-default culture</li><li>Lasting competitive advantage</li></ul>
+      </div>
+      <div class="pro-con-box cons">
+        <h4>Cons</h4>
+        <ul><li>Very hard to achieve and sustain</li><li>Requires extremely high hiring bar</li><li>Governance becomes mission-critical</li><li>Risk of uncoordinated shadow AI</li></ul>
+      </div>
+    </div>
+    <div class="tab-note"><strong style="color:var(--text)">When it works:</strong> AI-native companies where ML is core to the product and competitive moat, not just a feature.<br><strong style="color:var(--text)">Real example:</strong> Netflix, TikTok — AI is embedded in every product and product decision, not bolted on.</div>
+  </div>
+</section>
+
+<!-- Section 4: Maturity Stages -->
+<section class="section">
+  <div class="section-label">Maturity Stages</div>
+  <h2>Three stages of AI team evolution</h2>
+  <p class="section-intro">AI teams grow through predictable stages. Each stage has different priorities, key hires, and success metrics. Trying to skip stages is the most common mistake.</p>
+  <div class="card-grid" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">
+    <div class="stage-card s1">
+      <div class="stage-num">01</div>
+      <h3 style="margin-bottom:0.75rem">Experimenting</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:1rem">2–5 people. Proving AI can create tangible business value. Most work is prototype-grade.</p>
+      <div style="font-size:13px;color:var(--muted)">
+        <p style="margin-bottom:0.4rem"><strong style="color:var(--text)">Key hires:</strong> 1 ML Engineer, 1 Data Scientist</p>
+        <p style="margin-bottom:0.4rem"><strong style="color:var(--text)">Challenge:</strong> Data access and stakeholder buy-in</p>
+        <p style="margin-bottom:0.75rem"><strong style="color:var(--text)">Success metric:</strong> At least one model serving real traffic</p>
+      </div>
+      <div><span class="metric-pill">🔬 Prototype-first</span><span class="metric-pill">📊 Prove ROI</span></div>
+    </div>
+    <div class="stage-card s2">
+      <div class="stage-num">02</div>
+      <h3 style="margin-bottom:0.75rem">Scaling</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:1rem">10–20 people. Platform building. Multiple models in production across several teams.</p>
+      <div style="font-size:13px;color:var(--muted)">
+        <p style="margin-bottom:0.4rem"><strong style="color:var(--text)">Key hires:</strong> ML Platform Eng., MLOps, Data Engineers</p>
+        <p style="margin-bottom:0.4rem"><strong style="color:var(--text)">Challenge:</strong> Tech debt and duplicated infrastructure</p>
+        <p style="margin-bottom:0.75rem"><strong style="color:var(--text)">Success metric:</strong> Models retrain automatically; drift is monitored</p>
+      </div>
+      <div><span class="metric-pill">🏗️ Platform-first</span><span class="metric-pill">⚡ Reduce friction</span></div>
+    </div>
+    <div class="stage-card s3">
+      <div class="stage-num">03</div>
+      <h3 style="margin-bottom:0.75rem">Mature</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:1rem">50+ people. AI-first culture. ML is embedded across every product and product decision.</p>
+      <div style="font-size:13px;color:var(--muted)">
+        <p style="margin-bottom:0.4rem"><strong style="color:var(--text)">Key hires:</strong> AI Safety, Governance, Specialised researchers</p>
+        <p style="margin-bottom:0.4rem"><strong style="color:var(--text)">Challenge:</strong> Governance, safety, and org alignment at scale</p>
+        <p style="margin-bottom:0.75rem"><strong style="color:var(--text)">Success metric:</strong> AI contributes measurably to core business OKRs</p>
+      </div>
+      <div><span class="metric-pill">🛡️ Safety</span><span class="metric-pill">🌐 AI-native culture</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 5: Platform Team -->
+<section class="section">
+  <div class="section-label">The Platform Team</div>
+  <h2>Why every mature AI org needs a platform team</h2>
+  <p class="section-intro">The platform team eliminates the 80% of work that is infrastructure. Without it, every ML team rebuilds the same five capabilities from scratch on every new project.</p>
+  <div class="platform-grid">
+    <div class="platform-item">
+      <div class="pi-icon">🗂️</div>
+      <h4>Feature Store</h4>
+      <p>Centralised, reusable features shared across training and serving</p>
+      <div style="margin-top:0.75rem"><span class="badge" style="background:rgba(16,185,129,0.12);color:#6ee7b7">Build — core differentiator</span></div>
+    </div>
+    <div class="platform-item">
+      <div class="pi-icon">📦</div>
+      <h4>Model Registry</h4>
+      <p>Version-controlled model artifacts, lineage tracking, and metadata</p>
+      <div style="margin-top:0.75rem"><span class="badge" style="background:rgba(245,158,11,0.12);color:#fcd34d">Buy — MLflow / W&B</span></div>
+    </div>
+    <div class="platform-item">
+      <div class="pi-icon">🧪</div>
+      <h4>Experiment Tracking</h4>
+      <p>Log metrics, hyperparameters, and artifacts across every run</p>
+      <div style="margin-top:0.75rem"><span class="badge" style="background:rgba(245,158,11,0.12);color:#fcd34d">Buy — W&B / MLflow</span></div>
+    </div>
+    <div class="platform-item">
+      <div class="pi-icon">⚡</div>
+      <h4>Serving Infrastructure</h4>
+      <p>Low-latency model serving, request batching, and auto-scaling</p>
+      <div style="margin-top:0.75rem"><span class="badge" style="background:rgba(16,185,129,0.12);color:#6ee7b7">Build core, buy GPU</span></div>
+    </div>
+    <div class="platform-item">
+      <div class="pi-icon">📡</div>
+      <h4>Monitoring</h4>
+      <p>Drift detection, data quality checks, model performance alerting</p>
+      <div style="margin-top:0.75rem"><span class="badge" style="background:rgba(245,158,11,0.12);color:#fcd34d">Buy — Evidently / Arize</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 6: Hiring and Skills -->
+<section class="section">
+  <div class="section-label">Hiring and Skills</div>
+  <h2>Skills matrix for AI engineering</h2>
+  <p class="section-intro">Use this matrix to structure hiring, performance reviews, and skills gap analysis across every role in the team.</p>
+  <div style="overflow-x:auto">
+    <table class="scale-table">
+      <thead>
+        <tr>
+          <th>Role</th>
+          <th>Technical Skills</th>
+          <th>Domain Knowledge</th>
+          <th>Soft Skills</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>ML Engineer</strong></td><td>Python, PyTorch, feature engineering, distributed training</td><td>ML theory, model evaluation, statistics</td><td>Code review, technical documentation</td></tr>
+        <tr><td><strong>Data Scientist</strong></td><td>Python/R, SQL, statistical modelling, experiment design</td><td>Business domain, KPI understanding</td><td>Data storytelling, stakeholder comms</td></tr>
+        <tr><td><strong>AI PM</strong></td><td>Data literacy, SQL basics, A/B testing, metric design</td><td>ML capabilities and limitations</td><td>Prioritisation, cross-team communication</td></tr>
+        <tr><td><strong>ML Platform Eng.</strong></td><td>Kubernetes, Spark, CI/CD, distributed systems</td><td>ML pipeline patterns, data formats</td><td>Cross-team collaboration, API design</td></tr>
+        <tr><td><strong>MLOps Engineer</strong></td><td>Docker, CI/CD, monitoring, Python, cloud infra</td><td>Model lifecycle, drift types</td><td>Incident response, on-call culture</td></tr>
+        <tr><td><strong>Data Engineer</strong></td><td>SQL, Spark, dbt, Airflow, streaming (Kafka)</td><td>Data modelling, schema design</td><td>Reliability mindset, SLA ownership</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card-grid" style="margin-top:2rem">
+    <div class="card">
+      <div class="card-icon" style="background:rgba(244,63,94,0.12)">🚩</div>
+      <h3>Red flags when hiring</h3>
+      <p>Cannot explain model tradeoffs. No production experience. Treats Kaggle leaderboard performance as production quality. Shows no interest in data quality.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(16,185,129,0.12)">✅</div>
+      <h3>What good looks like</h3>
+      <p>Talks about failure modes before results. Has shipped something to production. Asks about data before the model. Understands evaluation beyond accuracy.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(99,102,241,0.12)">🎯</div>
+      <h3>How to assess ML candidates</h3>
+      <p>Give a real dataset with data quality issues. Ask them to design an evaluation framework. Ask what went wrong on a past project and how they fixed it.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Section 7: Common Mistakes -->
+<section class="section">
+  <div class="section-label">Common Mistakes</div>
+  <h2>Structural mistakes that kill AI teams</h2>
+  <p class="section-intro">These four patterns appear repeatedly in organisations that struggle to scale AI beyond prototypes.</p>
+  <div class="card-grid">
+    <div class="card" style="border-color:rgba(244,63,94,0.2)">
+      <div class="card-icon" style="background:rgba(244,63,94,0.12)">❌</div>
+      <h3>Hiring only data scientists</h3>
+      <p>Without ML engineers, data engineers, and MLOps, data scientists become permanently blocked and models never reach production.</p>
+      <span class="tag" style="background:rgba(244,63,94,0.12);color:#fda4af">Critical</span>
+    </div>
+    <div class="card" style="border-color:rgba(244,63,94,0.2)">
+      <div class="card-icon" style="background:rgba(244,63,94,0.12)">❌</div>
+      <h3>No MLOps from day 1</h3>
+      <p>Manual deployments and absent monitoring creates fragile systems. Retraining takes weeks. Model degradation goes undetected in production.</p>
+      <span class="tag" style="background:rgba(244,63,94,0.12);color:#fda4af">Critical</span>
+    </div>
+    <div class="card" style="border-color:rgba(244,63,94,0.2)">
+      <div class="card-icon" style="background:rgba(244,63,94,0.12)">❌</div>
+      <h3>Ignoring data engineering</h3>
+      <p>Data scientists spend 80% of time cleaning data because no one owns pipelines. Every new project restarts the same data wrangling from scratch.</p>
+      <span class="tag" style="background:rgba(244,63,94,0.12);color:#fda4af">Structural</span>
+    </div>
+    <div class="card" style="border-color:rgba(244,63,94,0.2)">
+      <div class="card-icon" style="background:rgba(244,63,94,0.12)">❌</div>
+      <h3>No product alignment</h3>
+      <p>The AI team builds impressive models that solve the wrong problems. Without an AI PM, there is no bridge between user needs and ML capabilities.</p>
+      <span class="tag" style="background:rgba(244,63,94,0.12);color:#fda4af">Strategic</span>
+    </div>
+  </div>
+</section>
+
+<!-- Section 8: End-to-end Guide -->
+<section class="section">
+  <div class="section-label">Team Design Guide</div>
+  <h2>Building an AI team from 0 to 50</h2>
+  <p class="section-intro">A practical walkthrough for scaling an AI organisation through all three maturity stages, with clear guidance on sequencing hires.</p>
+  <div class="answer-box">
+    <p><strong style="color:var(--accent2)">Hires 1–3 (Stage 1 — Prove value):</strong> Start with one strong ML Engineer who can also do data science work. Add a Data Engineer as soon as data pipelines become painful and repetitive. Validate one business use case end-to-end before adding headcount.</p>
+    <p><strong style="color:var(--accent2)">Hires 4–10 (Transition to Stage 2 — Build platform):</strong> Hire an ML Platform Engineer before the team grows further — platform debt compounds fast. Add an AI Product Manager to manage stakeholder expectations and shape the roadmap. Bring in a second ML Engineer and a dedicated Data Scientist.</p>
+    <p><strong style="color:var(--accent2)">Hires 11–25 (Scale — Embed and specialise):</strong> Begin embedding ML Engineers in product teams using a hub-and-spoke model. Hire an MLOps Engineer to automate retraining and monitoring. Build a feature store and model registry to eliminate duplication.</p>
+    <p><strong style="color:var(--accent2)">Hires 26–50 (Mature — Governance and safety):</strong> Add an AI Safety / Ethics role once models are in high-stakes decisions affecting users. Hire an AI Engineering Manager with experience leading ML teams at scale. Consider specialised researchers for differentiated capabilities that create defensible IP.</p>
+    <p><strong style="color:var(--accent)">Key principle:</strong> Always hire platform and data engineering capabilities earlier than feels necessary. Under-investing in infrastructure compounds in cost at every subsequent headcount milestone.</p>
+  </div>
+</section>
+
+<footer>
+  <span>Kuldeep Rao</span> · AI Team Structure
+</footer>
+
+<script>
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.section').forEach(s => observer.observe(s));
+
+function toggleRole(el) {
+  el.classList.toggle('open');
+}
+
+function switchTab(btn, id, sectionId) {
+  var section = document.getElementById(sectionId);
+  section.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+  section.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+  btn.classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+</script>
+</body>
+</html>

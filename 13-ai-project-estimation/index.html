@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Project Estimation — How to Estimate ML and AI Projects</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+:root{--bg:#0f1117;--bg2:#161b27;--bg3:#1e2535;--border:rgba(255,255,255,0.08);--text:#e2e8f0;--muted:#8892a4;--accent:#6366f1;--accent2:#22d3ee;--accent3:#f59e0b;--green:#10b981;--red:#f43f5e;--purple:#a78bfa;--font:'Inter',sans-serif;--mono:'JetBrains Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.7;overflow-x:hidden}
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4rem 2rem;position:relative;overflow:hidden}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(99,102,241,0.07) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,0.07) 1px,transparent 1px);background-size:48px 48px;mask-image:radial-gradient(ellipse at center,black 30%,transparent 80%)}
+.hero-glow{position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(245,158,11,0.08) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);border-radius:100px;padding:6px 16px;font-size:12px;font-weight:500;color:#a5b4fc;margin-bottom:2rem;letter-spacing:0.05em;text-transform:uppercase}
+.hero h1{font-size:clamp(2.5rem,6vw,4.5rem);font-weight:600;letter-spacing:-0.03em;line-height:1.1;margin-bottom:1.5rem;position:relative}
+.hero h1 span{background:linear-gradient(135deg,#f59e0b,#f43f5e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero p{font-size:1.15rem;color:var(--muted);max-width:600px;margin-bottom:3rem;position:relative}
+.hero-stats{display:flex;gap:3rem;position:relative;flex-wrap:wrap;justify-content:center}
+.stat{text-align:center}.stat-num{font-size:2rem;font-weight:600;color:var(--accent2);font-family:var(--mono)}.stat-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em}
+.scroll-hint{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);color:var(--muted);font-size:12px;display:flex;flex-direction:column;align-items:center;gap:8px;animation:bounce 2s ease-in-out infinite}
+@keyframes bounce{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(8px)}}
+.section{max-width:960px;margin:0 auto;padding:5rem 2rem;opacity:0;transform:translateY(30px);transition:opacity 0.6s ease,transform 0.6s ease}
+.section.visible{opacity:1;transform:translateY(0)}
+.section-label{font-size:11px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:0.75rem}
+.section h2{font-size:clamp(1.6rem,3vw,2.2rem);font-weight:600;letter-spacing:-0.02em;margin-bottom:1rem;line-height:1.2}
+.section-intro{color:var(--muted);font-size:1.05rem;max-width:700px;margin-bottom:3rem}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1.5rem;transition:border-color 0.2s,transform 0.2s}
+.card:hover{border-color:rgba(99,102,241,0.3);transform:translateY(-2px)}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem}
+.card-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:1rem}
+.card h3{font-size:1rem;font-weight:600;margin-bottom:0.5rem}.card p{font-size:13px;color:var(--muted);line-height:1.6}
+.tag{display:inline-block;font-size:11px;font-weight:500;padding:3px 10px;border-radius:100px;margin-top:0.75rem}
+.tab-controls{display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1.5rem;border-bottom:1px solid var(--border);padding-bottom:1rem}
+.tab-btn{padding:8px 18px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--muted);font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.2s}
+.tab-btn.active{background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.3);color:#a5b4fc}
+.tab-btn:hover:not(.active){color:var(--text)}.tab-panel{display:none;animation:fadeIn 0.3s ease}.tab-panel.active{display:block}
+.scale-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:1.5rem}
+.scale-table th{text-align:left;padding:10px 16px;background:var(--bg3);color:var(--muted);font-weight:500;font-size:11px;letter-spacing:0.08em;text-transform:uppercase}
+.scale-table th:first-child{border-radius:8px 0 0 8px}.scale-table th:last-child{border-radius:0 8px 8px 0}
+.scale-table td{padding:12px 16px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.6}
+.scale-table tr:last-child td{border-bottom:none}.scale-table tr:hover td{background:rgba(255,255,255,0.02)}
+.answer-box{background:linear-gradient(135deg,rgba(99,102,241,0.08),rgba(34,211,238,0.05));border:1px solid rgba(99,102,241,0.25);border-radius:16px;padding:2rem;margin-top:2rem}
+.answer-box p{font-size:14px;color:var(--muted);line-height:1.9}.answer-box p+p{margin-top:0.75rem}
+.badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:500}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:3px}
+/* Phase cards */
+.phase-card{cursor:pointer;user-select:none}
+.phase-card .card-header{display:flex;align-items:center;gap:0.75rem}
+.phase-card .expand-icon{margin-left:auto;font-size:20px;color:var(--muted);transition:transform 0.2s,color 0.2s;flex-shrink:0;line-height:1}
+.phase-card.open .expand-icon{transform:rotate(45deg);color:var(--accent)}
+.phase-detail{margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);display:none}
+.phase-card.open .phase-detail{display:block}
+.phase-detail p{font-size:13px;color:var(--muted);margin-bottom:0.5rem}
+.phase-detail p:last-child{margin-bottom:0}
+.phase-detail strong{color:var(--text)}
+/* Phase stepper */
+.phase-stepper{display:flex;gap:0;overflow-x:auto;padding-bottom:0.5rem}
+.phase-step{flex-shrink:0;background:var(--bg3);border:1px solid var(--border);border-radius:0;padding:1rem 1.25rem;min-width:150px;position:relative}
+.phase-step:first-child{border-radius:12px 0 0 12px}
+.phase-step:last-child{border-radius:0 12px 12px 0}
+.phase-step + .phase-step{border-left:none}
+.phase-step.hi{background:rgba(99,102,241,0.1);border-color:rgba(99,102,241,0.3)}
+.phase-step h4{font-size:12px;font-weight:600;margin-bottom:0.3rem}
+.phase-step .duration{font-family:var(--mono);font-size:11px;color:var(--accent2)}
+.phase-step .risk{font-size:10px;color:var(--muted);margin-top:0.3rem}
+/* Uncertainty cone */
+.cone-container{margin:2rem 0;position:relative}
+.cone-row{display:flex;align-items:stretch;gap:0;height:130px}
+.cone-segment{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:0.5rem;text-align:center;border:1px solid var(--border);position:relative;overflow:hidden}
+.cone-segment:first-child{border-radius:12px 0 0 12px}
+.cone-segment:last-child{border-radius:0 12px 12px 0}
+.cone-segment + .cone-segment{border-left:none}
+.cone-inner{position:absolute;left:0;right:0;background:rgba(99,102,241,0.12);border-top:2px solid rgba(99,102,241,0.4);border-bottom:2px solid rgba(99,102,241,0.4);transition:all 0.3s}
+.cone-label{position:relative;z-index:1;font-size:11px;font-weight:600;color:var(--text);margin-bottom:0.2rem}
+.cone-range{position:relative;z-index:1;font-family:var(--mono);font-size:10px;color:var(--accent2)}
+.cone-stage{position:relative;z-index:1;font-size:10px;color:var(--muted);margin-top:0.2rem}
+/* Risk cards flip */
+.risk-card{cursor:pointer;user-select:none;position:relative;min-height:140px}
+.risk-front,.risk-back{position:absolute;inset:0;border-radius:16px;padding:1.5rem;backface-visibility:hidden;transition:opacity 0.25s,transform 0.25s}
+.risk-back{background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);opacity:0;transform:scale(0.97)}
+.risk-card.flipped .risk-front{opacity:0;transform:scale(0.97)}
+.risk-card.flipped .risk-back{opacity:1;transform:scale(1)}
+.risk-front{background:var(--bg2);border:1px solid var(--border)}
+.risk-front h3{font-size:0.95rem;font-weight:600;margin-bottom:0.5rem}
+.risk-back h3{font-size:0.95rem;font-weight:600;margin-bottom:0.5rem;color:var(--green)}
+.risk-hint{font-size:11px;color:var(--muted);margin-top:0.75rem}
+footer{text-align:center;padding:3rem 2rem;color:var(--muted);font-size:13px;border-top:1px solid var(--border);margin-top:2rem}
+footer span{color:var(--accent);font-weight:500}
+@media(max-width:640px){.hero-stats{gap:1.5rem}.phase-stepper{flex-direction:column}.phase-step{min-width:unset}.phase-step:first-child{border-radius:12px 12px 0 0}.phase-step:last-child{border-radius:0 0 12px 12px}.phase-step+.phase-step{border-left:1px solid var(--border);border-top:none}.tab-btn{padding:6px 12px;font-size:12px}}
+@media(prefers-reduced-motion:reduce){*,.section{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-badge">Estimation · Planning · ML Projects · Risk · Timelines</div>
+  <h1>AI Project<br><span>Estimation</span></h1>
+  <p>How to Estimate ML and AI Projects — frameworks for honest, defensible timeline and effort planning</p>
+  <div class="hero-stats">
+    <div class="stat"><div class="stat-num">5</div><div class="stat-label">Estimation Phases</div></div>
+    <div class="stat"><div class="stat-num">3</div><div class="stat-label">Uncertainty Types</div></div>
+    <div class="stat"><div class="stat-num">4</div><div class="stat-label">Risk Factors</div></div>
+    <div class="stat"><div class="stat-num">±</div><div class="stat-label">Range-based Estimates</div></div>
+  </div>
+  <div class="scroll-hint">scroll ↓</div>
+</div>
+
+<!-- Section 1: Foundation -->
+<section class="section">
+  <div class="section-label">Foundation</div>
+  <h2>Why AI projects are notoriously hard to estimate</h2>
+  <p class="section-intro">Software estimation is hard. AI estimation is harder — by an order of magnitude. The inputs are unknown, the outputs are probabilistic, and the integration adds a third layer of uncertainty most estimates ignore completely.</p>
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-icon" style="background:rgba(99,102,241,0.12)">🗃️</div>
+      <h3>Data unknowns</h3>
+      <p>Data quality, availability, labelling effort, and legal clearance are all unknown until you look. Each is a potential blocker that invalidates estimates made before data assessment.</p>
+      <span class="tag" style="background:rgba(99,102,241,0.12);color:#a5b4fc">Upstream unknown</span>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(245,158,11,0.12)">🎯</div>
+      <h3>Experiment uncertainty</h3>
+      <p>You cannot know whether a model will reach target accuracy before running experiments. The model might hit 95% in week 2 or require months of iteration to reach 80%.</p>
+      <span class="tag" style="background:rgba(245,158,11,0.12);color:#fcd34d">Probabilistic outcome</span>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(244,63,94,0.12)">⚙️</div>
+      <h3>Integration complexity</h3>
+      <p>A working ML model is not a working product. Production engineering — APIs, latency optimisation, error handling, monitoring — often takes as long as the model itself.</p>
+      <span class="tag" style="background:rgba(244,63,94,0.12);color:#fda4af">Hidden work</span>
+    </div>
+  </div>
+  <div style="background:var(--bg3);border-radius:12px;padding:1.25rem 1.5rem;margin-top:1.5rem;border-left:3px solid var(--accent3)">
+    <p style="font-size:13px;color:var(--muted)"><strong style="color:var(--text)">Key principle:</strong> Give ranges, not point estimates. "4–8 weeks" is honest and defensible. "6 weeks" is a guess presented as a commitment. Stakeholders may push back on ranges — explain that a point estimate carries hidden uncertainty that will surface as a miss, not as a risk.</p>
+  </div>
+</section>
+
+<!-- Section 2: The 5 Phases -->
+<section class="section">
+  <div class="section-label">The 5 Phases</div>
+  <h2>Every AI project has these phases — click each</h2>
+  <p class="section-intro">These five phases appear in every AI project. Each has different uncertainty, different blockers, and different skills required. Collapsing or skipping phases is the most common source of blown timelines.</p>
+  <div class="card-grid">
+
+    <div class="card phase-card" onclick="togglePhase(this)">
+      <div class="card-header">
+        <div class="card-icon" style="background:rgba(99,102,241,0.12);margin-bottom:0">🔍</div>
+        <div>
+          <h3 style="margin:0">Data Assessment</h3>
+          <span class="tag" style="background:rgba(99,102,241,0.12);color:#a5b4fc;margin-top:0.2rem">1–3 weeks</span>
+        </div>
+        <span class="expand-icon">+</span>
+      </div>
+      <div class="phase-detail">
+        <p><strong>What happens:</strong> Discover what data exists, profile data quality, identify gaps, assess labelling requirements, check legal / GDPR clearance.</p>
+        <p><strong>Typical duration:</strong> 1–3 weeks depending on data access complexity.</p>
+        <p><strong>Common blockers:</strong> Data behind access control gates, undocumented schemas, missing data for edge cases, legal review queues.</p>
+        <p><strong>What adds time:</strong> Multiple data owners, no data dictionary, PII that requires anonymisation before use.</p>
+      </div>
+    </div>
+
+    <div class="card phase-card" onclick="togglePhase(this)">
+      <div class="card-header">
+        <div class="card-icon" style="background:rgba(245,158,11,0.12);margin-bottom:0">🧪</div>
+        <div>
+          <h3 style="margin:0">Experimentation</h3>
+          <span class="tag" style="background:rgba(245,158,11,0.12);color:#fcd34d;margin-top:0.2rem">2–8 weeks</span>
+        </div>
+        <span class="expand-icon">+</span>
+      </div>
+      <div class="phase-detail">
+        <p><strong>What happens:</strong> Baseline modelling, feature engineering, model selection, hyperparameter tuning, evaluation against defined success metrics.</p>
+        <p><strong>Typical duration:</strong> 2–8 weeks — the most variable phase in any AI project.</p>
+        <p><strong>Common blockers:</strong> Poor baseline data, class imbalance, target metric is not well defined, no labelled evaluation set.</p>
+        <p><strong>What adds time:</strong> Target accuracy is too high for the available data, novel problem domain with no prior art to draw from.</p>
+      </div>
+    </div>
+
+    <div class="card phase-card" onclick="togglePhase(this)">
+      <div class="card-header">
+        <div class="card-icon" style="background:rgba(34,211,238,0.12);margin-bottom:0">🏗️</div>
+        <div>
+          <h3 style="margin:0">Engineering</h3>
+          <span class="tag" style="background:rgba(34,211,238,0.12);color:#67e8f9;margin-top:0.2rem">3–6 weeks</span>
+        </div>
+        <span class="expand-icon">+</span>
+      </div>
+      <div class="phase-detail">
+        <p><strong>What happens:</strong> Productionise the model — build API, integrate with product, optimise latency, add error handling, write tests, document behaviour.</p>
+        <p><strong>Typical duration:</strong> 3–6 weeks for most ML features; longer for real-time or embedded systems.</p>
+        <p><strong>Common blockers:</strong> Latency requirements not met by model, prediction service architecture not agreed, no feature serving infrastructure.</p>
+        <p><strong>What adds time:</strong> Latency-constrained real-time serving, complex upstream data pipelines, integration with legacy systems.</p>
+      </div>
+    </div>
+
+    <div class="card phase-card" onclick="togglePhase(this)">
+      <div class="card-header">
+        <div class="card-icon" style="background:rgba(16,185,129,0.12);margin-bottom:0">🚀</div>
+        <div>
+          <h3 style="margin:0">Deployment</h3>
+          <span class="tag" style="background:rgba(16,185,129,0.12);color:#6ee7b7;margin-top:0.2rem">1–3 weeks</span>
+        </div>
+        <span class="expand-icon">+</span>
+      </div>
+      <div class="phase-detail">
+        <p><strong>What happens:</strong> Staged rollout (shadow mode → canary → full), A/B test setup, monitoring dashboard, alerting rules, runbook documentation.</p>
+        <p><strong>Typical duration:</strong> 1–3 weeks for shadow/canary + full rollout with monitoring.</p>
+        <p><strong>Common blockers:</strong> Security review queues, infrastructure change freeze, no A/B testing infrastructure, compliance sign-off.</p>
+        <p><strong>What adds time:</strong> Regulated industries requiring sign-off, high-risk model decisions (lending, healthcare), complex rollback requirements.</p>
+      </div>
+    </div>
+
+    <div class="card phase-card" onclick="togglePhase(this)">
+      <div class="card-header">
+        <div class="card-icon" style="background:rgba(167,139,250,0.12);margin-bottom:0">📡</div>
+        <div>
+          <h3 style="margin:0">Monitoring and Iteration</h3>
+          <span class="tag" style="background:rgba(167,139,250,0.12);color:#c4b5fd;margin-top:0.2rem">Ongoing</span>
+        </div>
+        <span class="expand-icon">+</span>
+      </div>
+      <div class="phase-detail">
+        <p><strong>What happens:</strong> Drift detection, performance tracking, retraining triggers, model refresh cycles, feedback loop integration.</p>
+        <p><strong>Typical duration:</strong> Ongoing — budget 20–30% of initial build cost per year for maintenance and retraining.</p>
+        <p><strong>Common blockers:</strong> No monitoring budget allocated, production data distribution shifts, no retraining pipeline built during initial delivery.</p>
+        <p><strong>What adds time:</strong> Data distribution shifts faster than expected, regulatory changes requiring re-evaluation, growing edge cases in production.</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- Section 3: Estimation by Project Type -->
+<section class="section" id="proj-section">
+  <div class="section-label">Estimation by Project Type</div>
+  <h2>Typical timelines by AI project type</h2>
+  <p class="section-intro">Each project type has a different phase distribution. Use these as starting baselines, then adjust for your data availability and team experience.</p>
+  <div class="tab-controls">
+    <button class="tab-btn active" onclick="switchTab(this,'pt1','proj-section')">Classification</button>
+    <button class="tab-btn" onclick="switchTab(this,'pt2','proj-section')">RAG System</button>
+    <button class="tab-btn" onclick="switchTab(this,'pt3','proj-section')">Agentic Workflow</button>
+    <button class="tab-btn" onclick="switchTab(this,'pt4','proj-section')">Fine-tuned LLM</button>
+    <button class="tab-btn" onclick="switchTab(this,'pt5','proj-section')">ML Platform</button>
+  </div>
+
+  <div id="pt1" class="tab-panel active">
+    <div class="phase-stepper">
+      <div class="phase-step"><h4>Data Assessment</h4><div class="duration">1–2 wks</div><div class="risk">Label availability key</div></div>
+      <div class="phase-step hi"><h4>Experimentation</h4><div class="duration">2–5 wks</div><div class="risk">Accuracy target risk</div></div>
+      <div class="phase-step"><h4>Engineering</h4><div class="duration">2–4 wks</div><div class="risk">Serving latency</div></div>
+      <div class="phase-step"><h4>Deployment</h4><div class="duration">1–2 wks</div><div class="risk">Rollout risk low</div></div>
+      <div class="phase-step"><h4>Monitoring</h4><div class="duration">Ongoing</div><div class="risk">Drift watch</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem">
+      <div style="background:var(--bg3);border-radius:12px;padding:1rem"><p style="font-size:12px;color:var(--muted)"><strong style="color:var(--text)">Total range:</strong> 6–13 weeks<br><strong style="color:var(--text)">Key risk:</strong> Labelled data availability<br><strong style="color:var(--text)">What shortens it:</strong> Clean labelled dataset ready before project starts<br><strong style="color:var(--text)">What extends it:</strong> Target accuracy above what data supports</p></div>
+      <div style="background:var(--bg3);border-radius:12px;padding:1rem"><p style="font-size:12px;color:var(--muted)"><strong style="color:var(--text)">Examples:</strong> Spam detection, churn prediction, document classification, intent classification<br><strong style="color:var(--text)">Baseline model:</strong> Logistic regression / XGBoost → BERT for text tasks<br><strong style="color:var(--text)">Evaluation:</strong> F1, AUC-ROC, precision/recall at threshold</p></div>
+    </div>
+  </div>
+
+  <div id="pt2" class="tab-panel">
+    <div class="phase-stepper">
+      <div class="phase-step hi"><h4>Data Assessment</h4><div class="duration">1–3 wks</div><div class="risk">Doc quality + chunking</div></div>
+      <div class="phase-step"><h4>Indexing Build</h4><div class="duration">1–3 wks</div><div class="risk">Embedding choice</div></div>
+      <div class="phase-step hi"><h4>Retrieval Eval</h4><div class="duration">2–4 wks</div><div class="risk">Recall and precision</div></div>
+      <div class="phase-step"><h4>Engineering</h4><div class="duration">2–4 wks</div><div class="risk">Latency and cost</div></div>
+      <div class="phase-step"><h4>Deployment</h4><div class="duration">1–2 wks</div><div class="risk">LLM cost monitoring</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem">
+      <div style="background:var(--bg3);border-radius:12px;padding:1rem"><p style="font-size:12px;color:var(--muted)"><strong style="color:var(--text)">Total range:</strong> 7–16 weeks<br><strong style="color:var(--text)">Key risk:</strong> Document quality and chunking strategy<br><strong style="color:var(--text)">What shortens it:</strong> Well-structured source documents, existing embedding model<br><strong style="color:var(--text)">What extends it:</strong> Mixed document formats (PDFs, scanned images, tables)</p></div>
+      <div style="background:var(--bg3);border-radius:12px;padding:1rem"><p style="font-size:12px;color:var(--muted)"><strong style="color:var(--text)">Key decisions:</strong> Chunk size, embedding model, retrieval strategy (hybrid vs dense), reranker<br><strong style="color:var(--text)">Evaluation:</strong> Retrieval recall@k, answer faithfulness, answer relevancy (RAGAS)<br><strong style="color:var(--text)">Cost driver:</strong> LLM API calls at inference time</p></div>
+    </div>
+  </div>
+
+  <div id="pt3" class="tab-panel">
+    <div class="phase-stepper">
+      <div class="phase-step"><h4>Tool Design</h4><div class="duration">1–2 wks</div><div class="risk">Scope creep</div></div>
+      <div class="phase-step hi"><h4>Agent Build</h4><div class="duration">3–6 wks</div><div class="risk">Loop behaviour</div></div>
+      <div class="phase-step hi"><h4>Evaluation</h4><div class="duration">2–4 wks</div><div class="risk">Hard to automate</div></div>
+      <div class="phase-step"><h4>Safety Review</h4><div class="duration">1–3 wks</div><div class="risk">Guardrail design</div></div>
+      <div class="phase-step"><h4>Deployment</h4><div class="duration">2–4 wks</div><div class="risk">Human-in-loop design</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem">
+      <div style="background:var(--bg3);border-radius:12px;padding:1rem"><p style="font-size:12px;color:var(--muted)"><strong style="color:var(--text)">Total range:</strong> 9–19 weeks<br><strong style="color:var(--text)">Key risk:</strong> Unpredictable agent loops and hallucination in tool calls<br><strong style="color:var(--text)">What shortens it:</strong> Narrow, well-scoped tool set with clear success criteria<br><strong style="color:var(--text)">What extends it:</strong> Broad scope, ambiguous task decomposition, no eval framework</p></div>
+      <div style="background:var(--bg3);border-radius:12px;padding:1rem"><p style="font-size:12px;color:var(--muted)"><strong style="color:var(--text)">Most underestimated work:</strong> Evaluation — agentic systems require task-completion benchmarks, not just output scoring<br><strong style="color:var(--text)">Safety requirements:</strong> Every action tool needs a guardrail. Budget 20% of build time for safety alone.</p></div>
+    </div>
+  </div>
+
+  <div id="pt4" class="tab-panel">
+    <div class="phase-stepper">
+      <div class="phase-step hi"><h4>Data Prep</h4><div class="duration">3–6 wks</div><div class="risk">Data cleaning critical</div></div>
+      <div class="phase-step hi"><h4>Fine-tuning Runs</h4><div class="duration">2–5 wks</div><div class="risk">Compute cost</div></div>
+      <div class="phase-step"><h4>Evaluation</h4><div class="duration">2–3 wks</div><div class="risk">Benchmark selection</div></div>
+      <div class="phase-step"><h4>Engineering</h4><div class="duration">2–4 wks</div><div class="risk">Serving infra</div></div>
+      <div class="phase-step"><h4>Deployment</h4><div class="duration">1–3 wks</div><div class="risk">Version management</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem">
+      <div style="background:var(--bg3);border-radius:12px;padding:1rem"><p style="font-size:12px;color:var(--muted)"><strong style="color:var(--text)">Total range:</strong> 10–21 weeks<br><strong style="color:var(--text)">Key risk:</strong> Training data quality — garbage in, garbage out at scale<br><strong style="color:var(--text)">What shortens it:</strong> Using LoRA / QLoRA, starting from an instruction-tuned base, small dataset<br><strong style="color:var(--text)">What extends it:</strong> Full fine-tuning from scratch, proprietary data cleaning requirements</p></div>
+      <div style="background:var(--bg3);border-radius:12px;padding:1rem"><p style="font-size:12px;color:var(--muted)"><strong style="color:var(--text)">Cost considerations:</strong> GPU compute for training runs (can be significant), evaluation infrastructure, hosting cost for larger models<br><strong style="color:var(--text)">Before fine-tuning, ask:</strong> Could prompt engineering or RAG achieve the same goal in less time?</p></div>
+    </div>
+  </div>
+
+  <div id="pt5" class="tab-panel">
+    <div class="phase-stepper">
+      <div class="phase-step"><h4>Requirements</h4><div class="duration">2–3 wks</div><div class="risk">Stakeholder alignment</div></div>
+      <div class="phase-step hi"><h4>Core Build</h4><div class="duration">6–12 wks</div><div class="risk">Scope is large</div></div>
+      <div class="phase-step"><h4>Integration</h4><div class="duration">3–6 wks</div><div class="risk">Adoption friction</div></div>
+      <div class="phase-step"><h4>Migration</h4><div class="duration">2–4 wks</div><div class="risk">Existing pipeline debt</div></div>
+      <div class="phase-step"><h4>Rollout</h4><div class="duration">4–8 wks</div><div class="risk">Change management</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem">
+      <div style="background:var(--bg3);border-radius:12px;padding:1rem"><p style="font-size:12px;color:var(--muted)"><strong style="color:var(--text)">Total range:</strong> 17–33 weeks<br><strong style="color:var(--text)">Key risk:</strong> Adoption — platform teams often build before securing internal users<br><strong style="color:var(--text)">What shortens it:</strong> Buy a managed platform (Vertex AI, SageMaker) rather than build from scratch<br><strong style="color:var(--text)">What extends it:</strong> Custom security requirements, multi-cloud constraints</p></div>
+      <div style="background:var(--bg3);border-radius:12px;padding:1rem"><p style="font-size:12px;color:var(--muted)"><strong style="color:var(--text)">Build or buy decision:</strong> For most organisations, buy a managed ML platform and customise — the build cost rarely justifies the investment<br><strong style="color:var(--text)">Success metric:</strong> Time to deploy a new model should drop by at least 50% after platform adoption</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 4: The Data Tax -->
+<section class="section">
+  <div class="section-label">The Data Tax</div>
+  <h2>Why data always takes longer than estimated</h2>
+  <p class="section-intro">Data work is systematically underestimated in every AI project. It is the single biggest source of schedule overruns. Apply the multiplier before you commit.</p>
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-icon" style="background:rgba(99,102,241,0.12)">🔎</div>
+      <h3>Data discovery</h3>
+      <p>Finding where data actually lives, who owns it, what schema it follows, and whether it contains what you think it contains. Often takes 2x longer than assumed.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(245,158,11,0.12)">🧹</div>
+      <h3>Data quality</h3>
+      <p>Missing values, label noise, distribution skew, duplicate records, stale data. Quality problems are never obvious until you run your first model and get confusing results.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(244,63,94,0.12)">🏷️</div>
+      <h3>Labelling</h3>
+      <p>Human annotation is slow, expensive, and disagreement between annotators is higher than expected. Budget 1 week per 1,000 labels for complex classification tasks.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(16,185,129,0.12)">⚖️</div>
+      <h3>Legal / privacy clearance</h3>
+      <p>GDPR, data residency, consent requirements, and third-party data agreements all require legal review. Legal queues can add 2–4 weeks to any project start date.</p>
+    </div>
+  </div>
+  <div style="background:var(--bg3);border-radius:12px;padding:1.25rem 1.5rem;margin-top:1.5rem;border-left:3px solid var(--accent3);display:flex;align-items:center;gap:1rem">
+    <div style="font-size:2rem;flex-shrink:0">✕3</div>
+    <p style="font-size:13px;color:var(--muted);margin:0"><strong style="color:var(--text)">Rule of thumb:</strong> Whatever your data preparation estimate is — multiply it by 3. Not because engineers are wrong, but because data problems compound. The first problem reveals the second, which reveals the third. Budget accordingly before the project starts.</p>
+  </div>
+</section>
+
+<!-- Section 5: Uncertainty Cones -->
+<section class="section">
+  <div class="section-label">Uncertainty Cones</div>
+  <h2>How estimates get more accurate over time</h2>
+  <p class="section-intro">Your estimate accuracy narrows at each stage gate. Commit only to the level of precision your current knowledge supports. Re-estimate at every gate.</p>
+  <div class="cone-container">
+    <div class="cone-row">
+      <div class="cone-segment" style="background:rgba(244,63,94,0.04)">
+        <div class="cone-inner" style="top:10%;bottom:10%;"></div>
+        <div class="cone-label">Project Start</div>
+        <div class="cone-range">4–20 weeks</div>
+        <div class="cone-stage">Before data assessment</div>
+      </div>
+      <div class="cone-segment" style="background:rgba(245,158,11,0.04)">
+        <div class="cone-inner" style="top:20%;bottom:20%;"></div>
+        <div class="cone-label">After Data Assessment</div>
+        <div class="cone-range">6–14 weeks</div>
+        <div class="cone-stage">Data quality confirmed</div>
+      </div>
+      <div class="cone-segment" style="background:rgba(99,102,241,0.04)">
+        <div class="cone-inner" style="top:30%;bottom:30%;"></div>
+        <div class="cone-label">After Prototype</div>
+        <div class="cone-range">8–12 weeks</div>
+        <div class="cone-stage">Model baseline established</div>
+      </div>
+      <div class="cone-segment" style="background:rgba(16,185,129,0.06)">
+        <div class="cone-inner" style="top:38%;bottom:38%;"></div>
+        <div class="cone-label">After Staging</div>
+        <div class="cone-range">9–11 weeks</div>
+        <div class="cone-stage">Engineering complete</div>
+      </div>
+    </div>
+  </div>
+  <div class="card-grid" style="margin-top:1.5rem">
+    <div class="card"><div class="card-icon" style="background:rgba(244,63,94,0.12)">🔴</div><h3>Before data assessment</h3><p>Estimate cone is at its widest. A 5x range is normal and honest. Never commit to a delivery date before you have confirmed data availability and quality.</p></div>
+    <div class="card"><div class="card-icon" style="background:rgba(245,158,11,0.12)">🟡</div><h3>After data assessment</h3><p>Cone narrows to roughly 2x. You now know what you are working with. This is the first point at which a sprint-level plan is meaningful.</p></div>
+    <div class="card"><div class="card-icon" style="background:rgba(16,185,129,0.12)">🟢</div><h3>After prototype</h3><p>Cone narrows to 1.3x. You know the model architecture works, the data pipeline is built, and the main remaining work is engineering and deployment.</p></div>
+  </div>
+</section>
+
+<!-- Section 6: Risk Factors -->
+<section class="section">
+  <div class="section-label">Risk Factors</div>
+  <h2>What blows AI project timelines — click to see mitigation</h2>
+  <p class="section-intro">Each of these risks has appeared in real AI projects. Click any risk card to flip it and see the mitigation strategy.</p>
+  <div class="card-grid">
+
+    <div class="risk-card" onclick="flipRisk(this)" style="min-height:160px">
+      <div class="risk-front card">
+        <div class="card-icon" style="background:rgba(244,63,94,0.12)">⚠️</div>
+        <h3>Data quality worse than expected</h3>
+        <p style="font-size:13px;color:var(--muted)">The dataset looks fine until you train a model — then you find 30% of labels are wrong or the feature distributions are totally different from production.</p>
+        <span class="risk-hint">click to see mitigation →</span>
+      </div>
+      <div class="risk-back" style="position:absolute;inset:0;border-radius:16px;padding:1.5rem">
+        <div class="card-icon" style="background:rgba(16,185,129,0.12)">✅</div>
+        <h3 style="color:var(--green)">Mitigation</h3>
+        <p style="font-size:13px;color:var(--muted)">Run a mandatory data assessment sprint before estimation. Profile all features. Check label agreement rate. Build a sample evaluation set and validate it with a domain expert before modelling starts.</p>
+      </div>
+    </div>
+
+    <div class="risk-card" onclick="flipRisk(this)" style="min-height:160px">
+      <div class="risk-front card">
+        <div class="card-icon" style="background:rgba(244,63,94,0.12)">⚠️</div>
+        <h3>Model accuracy target unreachable</h3>
+        <p style="font-size:13px;color:var(--muted)">The business requirement is "95% accuracy" but the data supports 78% maximum. Neither side knew this at estimation time, so the project runs forever trying to hit an impossible target.</p>
+        <span class="risk-hint">click to see mitigation →</span>
+      </div>
+      <div class="risk-back" style="position:absolute;inset:0;border-radius:16px;padding:1.5rem">
+        <div class="card-icon" style="background:rgba(16,185,129,0.12)">✅</div>
+        <h3 style="color:var(--green)">Mitigation</h3>
+        <p style="font-size:13px;color:var(--muted)">Set a human performance baseline before defining the target. Agree on minimum viable accuracy (what is the cost of error?) rather than aspirational accuracy. Create an accuracy milestone gate at week 3 of experimentation.</p>
+      </div>
+    </div>
+
+    <div class="risk-card" onclick="flipRisk(this)" style="min-height:160px">
+      <div class="risk-front card">
+        <div class="card-icon" style="background:rgba(244,63,94,0.12)">⚠️</div>
+        <h3>Infrastructure not ready</h3>
+        <p style="font-size:13px;color:var(--muted)">The model is ready to deploy but the serving infrastructure, GPU allocation, or CI/CD pipeline for ML doesn't exist. Engineering work blocks on infra for 3–6 weeks.</p>
+        <span class="risk-hint">click to see mitigation →</span>
+      </div>
+      <div class="risk-back" style="position:absolute;inset:0;border-radius:16px;padding:1.5rem">
+        <div class="card-icon" style="background:rgba(16,185,129,0.12)">✅</div>
+        <h3 style="color:var(--green)">Mitigation</h3>
+        <p style="font-size:13px;color:var(--muted)">Start infrastructure work in parallel with experimentation, not after. Define the serving architecture during the data assessment phase. If infra doesn't exist, add infra setup as an explicit project phase with its own timeline.</p>
+      </div>
+    </div>
+
+    <div class="risk-card" onclick="flipRisk(this)" style="min-height:160px">
+      <div class="risk-front card">
+        <div class="card-icon" style="background:rgba(244,63,94,0.12)">⚠️</div>
+        <h3>Stakeholder requirement changes</h3>
+        <p style="font-size:13px;color:var(--muted)">Midway through an ML project, the business requirement changes — new target metric, new population to cover, new output format. The experiment phase restarts.</p>
+        <span class="risk-hint">click to see mitigation →</span>
+      </div>
+      <div class="risk-back" style="position:absolute;inset:0;border-radius:16px;padding:1.5rem">
+        <div class="card-icon" style="background:rgba(16,185,129,0.12)">✅</div>
+        <h3 style="color:var(--green)">Mitigation</h3>
+        <p style="font-size:13px;color:var(--muted)">Lock the success metric definition before any experimentation starts. Document it as a formal acceptance criterion. Changes after experimentation begins require a re-estimate and re-scoping session — make this process explicit upfront.</p>
+      </div>
+    </div>
+
+    <div class="risk-card" onclick="flipRisk(this)" style="min-height:160px">
+      <div class="risk-front card">
+        <div class="card-icon" style="background:rgba(244,63,94,0.12)">⚠️</div>
+        <h3>Security / compliance review delays</h3>
+        <p style="font-size:13px;color:var(--muted)">The model is ready. The security review queue is 6 weeks. Or the compliance team needs 3 weeks to review the data processing pipeline you are using.</p>
+        <span class="risk-hint">click to see mitigation →</span>
+      </div>
+      <div class="risk-back" style="position:absolute;inset:0;border-radius:16px;padding:1.5rem">
+        <div class="card-icon" style="background:rgba(16,185,129,0.12)">✅</div>
+        <h3 style="color:var(--green)">Mitigation</h3>
+        <p style="font-size:13px;color:var(--muted)">Engage security and compliance during data assessment, not at deployment. Submit for preliminary review early. Build review lead times into the timeline explicitly — never assume they are instantaneous.</p>
+      </div>
+    </div>
+
+    <div class="risk-card" onclick="flipRisk(this)" style="min-height:160px">
+      <div class="risk-front card">
+        <div class="card-icon" style="background:rgba(244,63,94,0.12)">⚠️</div>
+        <h3>Third-party API reliability</h3>
+        <p style="font-size:13px;color:var(--muted)">LLM API latency spikes unpredictably. Rate limits hit in production. The vendor changes pricing or deprecates a model version. Production stability suffers.</p>
+        <span class="risk-hint">click to see mitigation →</span>
+      </div>
+      <div class="risk-back" style="position:absolute;inset:0;border-radius:16px;padding:1.5rem">
+        <div class="card-icon" style="background:rgba(16,185,129,0.12)">✅</div>
+        <h3 style="color:var(--green)">Mitigation</h3>
+        <p style="font-size:13px;color:var(--muted)">Design for fallback from the start — caching, retry logic, and model version pinning. Evaluate total API cost at expected production volume before launch. For critical systems, consider running an open-source alternative in parallel.</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- Section 7: Stakeholder Communication -->
+<section class="section">
+  <div class="section-label">Stakeholder Communication</div>
+  <h2>How to present AI estimates</h2>
+  <p class="section-intro">Honest range-based estimates are more useful than false precision. Here is how to communicate them in a way that builds rather than erodes stakeholder trust.</p>
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-icon" style="background:rgba(99,102,241,0.12)">↔️</div>
+      <h3>Use ranges, not points</h3>
+      <p>Present "6–10 weeks" as a confidence range, not a hedge. Explain which variables move you toward the shorter or longer end. This shows analytical rigour, not uncertainty.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(34,211,238,0.12)">🔬</div>
+      <h3>Separate research from engineering</h3>
+      <p>State clearly: "Experimentation phase is 2–5 weeks and outcome is uncertain. Engineering phase is 3–4 weeks and is certain once the model is confirmed." Do not blend them into one number.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(16,185,129,0.12)">🎯</div>
+      <h3>Set accuracy milestones, not just ship dates</h3>
+      <p>Define gate criteria: "At week 4, the prototype must reach at least 80% F1 to proceed to engineering. Otherwise, we re-scope." This manages the most common AI estimation failure mode.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(245,158,11,0.12)">🔄</div>
+      <h3>Re-estimate at each phase gate</h3>
+      <p>Build in explicit re-estimation checkpoints after data assessment and after prototype. Share the updated estimate with stakeholders — this is not a sign of planning failure, it is how AI projects work.</p>
+    </div>
+  </div>
+  <div style="background:var(--bg3);border-radius:12px;padding:1.25rem 1.5rem;margin-top:1.5rem;border-left:3px solid var(--accent2)">
+    <p style="font-size:13px;color:var(--muted)"><strong style="color:var(--text)">Example language:</strong> "We estimate 6–10 weeks total, once data quality is confirmed clean in the assessment sprint. If data requires significant cleaning, we are looking at 10–14 weeks. We will re-estimate at the end of data assessment (week 2) and again after the modelling prototype (week 6)."</p>
+  </div>
+</section>
+
+<!-- Section 8: Common Estimation Mistakes -->
+<section class="section">
+  <div class="section-label">Common Mistakes</div>
+  <h2>Estimation mistakes that commit teams to impossible timelines</h2>
+  <p class="section-intro">These four mistakes are the most common causes of AI projects running significantly over time and budget.</p>
+  <div class="card-grid">
+    <div class="card" style="border-color:rgba(244,63,94,0.2)">
+      <div class="card-icon" style="background:rgba(244,63,94,0.12)">❌</div>
+      <h3>No data assessment phase</h3>
+      <p>Estimating the project without examining the data first means every assumption about data quality and availability is unvalidated. The most common source of 2x timeline overruns.</p>
+      <span class="tag" style="background:rgba(244,63,94,0.12);color:#fda4af">Most expensive mistake</span>
+    </div>
+    <div class="card" style="border-color:rgba(244,63,94,0.2)">
+      <div class="card-icon" style="background:rgba(244,63,94,0.12)">❌</div>
+      <h3>Estimating ML and engineering together</h3>
+      <p>Combining uncertain research work with deterministic engineering work into a single estimate obscures where the uncertainty lives and makes re-estimation conversations harder.</p>
+      <span class="tag" style="background:rgba(244,63,94,0.12);color:#fda4af">Visibility risk</span>
+    </div>
+    <div class="card" style="border-color:rgba(244,63,94,0.2)">
+      <div class="card-icon" style="background:rgba(244,63,94,0.12)">❌</div>
+      <h3>No buffer for re-experimentation</h3>
+      <p>The first model rarely works well enough. Budget at least 1.5x the initial experimentation estimate to cover iteration after the baseline — model improvements are rarely linear.</p>
+      <span class="tag" style="background:rgba(244,63,94,0.12);color:#fda4af">Iteration risk</span>
+    </div>
+    <div class="card" style="border-color:rgba(244,63,94,0.2)">
+      <div class="card-icon" style="background:rgba(244,63,94,0.12)">❌</div>
+      <h3>Single-point estimates under pressure</h3>
+      <p>Stakeholders push for a single number. Engineers cave and give one. That number becomes a commitment. The range gets lost and the uncertainty goes underground until it resurfaces as a miss.</p>
+      <span class="tag" style="background:rgba(244,63,94,0.12);color:#fda4af">Process failure</span>
+    </div>
+  </div>
+</section>
+
+<!-- Section 9: Estimation Template -->
+<section class="section">
+  <div class="section-label">Estimation Template</div>
+  <h2>End-to-end estimation for a full AI project</h2>
+  <p class="section-intro">A structured template for estimating any AI project from data assessment through to live monitoring. Use this as a starting point and adjust multipliers for your specific context.</p>
+  <div class="answer-box">
+    <p><strong style="color:var(--accent2)">Step 1 — Classify the project type:</strong> Identify whether this is classification, RAG, agentic, fine-tuning, or platform work. Each has a different phase distribution. Refer to the timeline tabs above for baseline ranges.</p>
+    <p><strong style="color:var(--accent2)">Step 2 — Run the data assessment first:</strong> Before committing to any timeline, spend 1–2 weeks assessing data availability, quality, and legal status. Only after this sprint can you give a meaningful estimate to stakeholders.</p>
+    <p><strong style="color:var(--accent2)">Step 3 — Estimate each phase separately:</strong> Produce a range for each phase: data prep, experimentation, engineering, deployment, and monitoring setup. Never present a single total without showing the phase breakdown.</p>
+    <p><strong style="color:var(--accent2)">Step 4 — Apply the data multiplier:</strong> Take your data preparation estimate and multiply it by 1.5–3 depending on data maturity. If data is greenfield (no existing pipelines, no labels), apply the 3x multiplier.</p>
+    <p><strong style="color:var(--accent2)">Step 5 — Document assumptions and risks:</strong> Every estimate is only valid under stated assumptions. Write them down — "this assumes 50k labelled examples are available, that serving latency requirement is under 200ms, and that no new data source integration is needed."</p>
+    <p><strong style="color:var(--accent)">Final output format:</strong> "We estimate [X–Y weeks] assuming [named assumptions]. The biggest uncertainty is [named risk]. We will re-estimate after [named milestone, e.g. data assessment sprint / modelling prototype]. Key risks that could extend to [Z weeks]: [list risks with mitigation]."</p>
+  </div>
+  <div style="overflow-x:auto;margin-top:2rem">
+    <table class="scale-table">
+      <thead>
+        <tr>
+          <th>Phase</th>
+          <th>Optimistic</th>
+          <th>Realistic</th>
+          <th>Pessimistic</th>
+          <th>Main risk</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Data Assessment</strong></td><td>1 week</td><td>2 weeks</td><td>4 weeks</td><td>Access gates, PII review</td></tr>
+        <tr><td><strong>Data Preparation</strong></td><td>1 week</td><td>3 weeks</td><td>6+ weeks</td><td>Quality worse than expected</td></tr>
+        <tr><td><strong>Experimentation</strong></td><td>2 weeks</td><td>4 weeks</td><td>10+ weeks</td><td>Target accuracy not reachable</td></tr>
+        <tr><td><strong>Engineering</strong></td><td>2 weeks</td><td>4 weeks</td><td>7 weeks</td><td>Serving infra not ready</td></tr>
+        <tr><td><strong>Deployment / Rollout</strong></td><td>1 week</td><td>2 weeks</td><td>5 weeks</td><td>Security / compliance queue</td></tr>
+        <tr><td><strong>Monitoring Setup</strong></td><td>0.5 week</td><td>1 week</td><td>2 weeks</td><td>No monitoring infra exists</td></tr>
+        <tr style="background:rgba(99,102,241,0.05)"><td><strong>TOTAL</strong></td><td><strong style="color:var(--green)">7.5 weeks</strong></td><td><strong style="color:var(--accent3)">16 weeks</strong></td><td><strong style="color:var(--red)">34+ weeks</strong></td><td>Data quality + accuracy</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<footer>
+  <span>Kuldeep Rao</span> · AI Project Estimation
+</footer>
+
+<script>
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.section').forEach(s => observer.observe(s));
+
+function togglePhase(el) {
+  el.classList.toggle('open');
+}
+
+function flipRisk(card) {
+  card.classList.toggle('flipped');
+}
+
+function switchTab(btn, id, sectionId) {
+  var section = document.getElementById(sectionId);
+  section.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+  section.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+  btn.classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+</script>
+</body>
+</html>

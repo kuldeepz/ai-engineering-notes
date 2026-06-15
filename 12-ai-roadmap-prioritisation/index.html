@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Roadmap Prioritisation — How to Decide What to Build</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+:root{--bg:#0f1117;--bg2:#161b27;--bg3:#1e2535;--border:rgba(255,255,255,0.08);--text:#e2e8f0;--muted:#8892a4;--accent:#6366f1;--accent2:#22d3ee;--accent3:#f59e0b;--green:#10b981;--red:#f43f5e;--purple:#a78bfa;--font:'Inter',sans-serif;--mono:'JetBrains Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.7;overflow-x:hidden}
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4rem 2rem;position:relative;overflow:hidden}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(99,102,241,0.07) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,0.07) 1px,transparent 1px);background-size:48px 48px;mask-image:radial-gradient(ellipse at center,black 30%,transparent 80%)}
+.hero-glow{position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(34,211,238,0.1) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);border-radius:100px;padding:6px 16px;font-size:12px;font-weight:500;color:#a5b4fc;margin-bottom:2rem;letter-spacing:0.05em;text-transform:uppercase}
+.hero h1{font-size:clamp(2.5rem,6vw,4.5rem);font-weight:600;letter-spacing:-0.03em;line-height:1.1;margin-bottom:1.5rem;position:relative}
+.hero h1 span{background:linear-gradient(135deg,#22d3ee,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero p{font-size:1.15rem;color:var(--muted);max-width:600px;margin-bottom:3rem;position:relative}
+.hero-stats{display:flex;gap:3rem;position:relative;flex-wrap:wrap;justify-content:center}
+.stat{text-align:center}.stat-num{font-size:2rem;font-weight:600;color:var(--accent2);font-family:var(--mono)}.stat-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em}
+.scroll-hint{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);color:var(--muted);font-size:12px;display:flex;flex-direction:column;align-items:center;gap:8px;animation:bounce 2s ease-in-out infinite}
+@keyframes bounce{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(8px)}}
+.section{max-width:960px;margin:0 auto;padding:5rem 2rem;opacity:0;transform:translateY(30px);transition:opacity 0.6s ease,transform 0.6s ease}
+.section.visible{opacity:1;transform:translateY(0)}
+.section-label{font-size:11px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:0.75rem}
+.section h2{font-size:clamp(1.6rem,3vw,2.2rem);font-weight:600;letter-spacing:-0.02em;margin-bottom:1rem;line-height:1.2}
+.section-intro{color:var(--muted);font-size:1.05rem;max-width:700px;margin-bottom:3rem}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1.5rem;transition:border-color 0.2s,transform 0.2s}
+.card:hover{border-color:rgba(99,102,241,0.3);transform:translateY(-2px)}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem}
+.card-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:1rem}
+.card h3{font-size:1rem;font-weight:600;margin-bottom:0.5rem}.card p{font-size:13px;color:var(--muted);line-height:1.6}
+.tag{display:inline-block;font-size:11px;font-weight:500;padding:3px 10px;border-radius:100px;margin-top:0.75rem}
+.tab-controls{display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1.5rem;border-bottom:1px solid var(--border);padding-bottom:1rem}
+.tab-btn{padding:8px 18px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--muted);font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.2s}
+.tab-btn.active{background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.3);color:#a5b4fc}
+.tab-btn:hover:not(.active){color:var(--text)}.tab-panel{display:none;animation:fadeIn 0.3s ease}.tab-panel.active{display:block}
+.scale-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:1.5rem}
+.scale-table th{text-align:left;padding:10px 16px;background:var(--bg3);color:var(--muted);font-weight:500;font-size:11px;letter-spacing:0.08em;text-transform:uppercase}
+.scale-table th:first-child{border-radius:8px 0 0 8px}.scale-table th:last-child{border-radius:0 8px 8px 0}
+.scale-table td{padding:12px 16px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.6}
+.scale-table tr:last-child td{border-bottom:none}.scale-table tr:hover td{background:rgba(255,255,255,0.02)}
+.answer-box{background:linear-gradient(135deg,rgba(99,102,241,0.08),rgba(34,211,238,0.05));border:1px solid rgba(99,102,241,0.25);border-radius:16px;padding:2rem;margin-top:2rem}
+.answer-box p{font-size:14px;color:var(--muted);line-height:1.9}.answer-box p+p{margin-top:0.75rem}
+.badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:500}
+.divider{width:100%;height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:2rem 0}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:3px}
+/* Initiative cards */
+.init-card{cursor:pointer;user-select:none}
+.init-card .card-header{display:flex;align-items:center;gap:0.75rem}
+.init-card .expand-icon{margin-left:auto;font-size:20px;color:var(--muted);transition:transform 0.2s,color 0.2s;flex-shrink:0;line-height:1}
+.init-card.open .expand-icon{transform:rotate(45deg);color:var(--accent)}
+.init-detail{margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);display:none}
+.init-card.open .init-detail{display:block}
+.init-detail p{font-size:13px;color:var(--muted);margin-bottom:0.5rem}
+.init-detail p:last-child{margin-bottom:0}
+.init-detail strong{color:var(--text)}
+/* Scoring table interactive */
+.score-input{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);font-family:var(--mono);font-size:12px;width:50px;text-align:center}
+.score-input:focus{outline:none;border-color:rgba(99,102,241,0.5)}
+.score-total{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--accent2)}
+.score-winner td{background:rgba(34,211,238,0.04) !important}
+/* Build vs buy matrix */
+.matrix{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:1.5rem}
+.matrix-cell{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.25rem}
+.matrix-cell h4{font-size:13px;font-weight:600;margin-bottom:0.5rem}
+.matrix-cell p{font-size:12px;color:var(--muted);line-height:1.6}
+.matrix-label{font-size:11px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem}
+/* Quarterly planner */
+.quarter-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0.75rem;margin-top:1.5rem}
+.q-col{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.q-header{padding:0.75rem 1rem;font-size:13px;font-weight:600;border-bottom:1px solid var(--border)}
+.q-band{padding:0.6rem 1rem;font-size:11px;color:var(--muted)}
+.q-band + .q-band{border-top:1px solid var(--border)}
+footer{text-align:center;padding:3rem 2rem;color:var(--muted);font-size:13px;border-top:1px solid var(--border);margin-top:2rem}
+footer span{color:var(--accent);font-weight:500}
+@media(max-width:640px){.hero-stats{gap:1.5rem}.quarter-grid{grid-template-columns:1fr 1fr}.matrix{grid-template-columns:1fr}.tab-btn{padding:6px 12px;font-size:12px}}
+@media(prefers-reduced-motion:reduce){*,.section{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-badge">Strategy · ROI · Prioritisation · Build vs Buy · Planning</div>
+  <h1>AI Roadmap<br><span>Prioritisation</span></h1>
+  <p>How to Decide What to Build — frameworks for scoring, sequencing, and defending AI investment decisions</p>
+  <div class="hero-stats">
+    <div class="stat"><div class="stat-num">5</div><div class="stat-label">Scoring Dimensions</div></div>
+    <div class="stat"><div class="stat-num">3</div><div class="stat-label">Decision Frameworks</div></div>
+    <div class="stat"><div class="stat-num">4</div><div class="stat-label">Initiative Types</div></div>
+    <div class="stat"><div class="stat-num">1</div><div class="stat-label">North Star</div></div>
+  </div>
+  <div class="scroll-hint">scroll ↓</div>
+</div>
+
+<!-- Section 1: Foundation -->
+<section class="section">
+  <div class="section-label">Foundation</div>
+  <h2>Why AI roadmap prioritisation is different</h2>
+  <p class="section-intro">Standard product prioritisation frameworks break down for AI initiatives. The inputs are uncertain, the outcomes are probabilistic, and the infrastructure cost is non-trivial before you build the first feature.</p>
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-icon" style="background:rgba(99,102,241,0.12)">🗃️</div>
+      <h3>Data dependency</h3>
+      <p>You cannot build the model without first solving data availability, quality, and labelling. This upstream work is often invisible in standard product planning.</p>
+      <span class="tag" style="background:rgba(99,102,241,0.12);color:#a5b4fc">Data-first planning</span>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(245,158,11,0.12)">🎲</div>
+      <h3>Outcome uncertainty</h3>
+      <p>ML outcomes are probabilistic. A model might reach 85% accuracy or 60%. Standard product roadmaps assume deterministic delivery — AI ones cannot.</p>
+      <span class="tag" style="background:rgba(245,158,11,0.12);color:#fcd34d">Use ranges, not points</span>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(34,211,238,0.12)">💸</div>
+      <h3>Infrastructure cost</h3>
+      <p>AI requires compute, storage, and tooling investment before a single user feature ships. This "tax" must be explicit in every AI roadmap and business case.</p>
+      <span class="tag" style="background:rgba(34,211,238,0.12);color:#67e8f9">Price in infra cost</span>
+    </div>
+  </div>
+  <div style="background:var(--bg3);border-radius:12px;padding:1.25rem 1.5rem;margin-top:1.5rem;border-left:3px solid var(--accent2)">
+    <p style="font-size:13px;color:var(--muted)"><strong style="color:var(--text)">Key insight:</strong> ROI for AI is harder to predict than for standard software. Use confidence intervals — "this initiative could reduce cost by £80k–£300k depending on model performance" — not single-point estimates. This is not hedging; it is honest communication.</p>
+  </div>
+</section>
+
+<!-- Section 2: Initiative Types -->
+<section class="section">
+  <div class="section-label">Initiative Types</div>
+  <h2>Four types of AI initiatives — click each</h2>
+  <p class="section-intro">Every AI initiative fits into one of four categories. Each has a different risk profile, timeline, and prioritisation logic.</p>
+  <div class="card-grid">
+
+    <div class="card init-card" onclick="toggleInit(this)">
+      <div class="card-header">
+        <div class="card-icon" style="background:rgba(16,185,129,0.12);margin-bottom:0">⚡</div>
+        <h3>Quick Wins</h3>
+        <span class="expand-icon">+</span>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-top:0.5rem">Rule-based automation, simple classifiers</p>
+      <span class="tag" style="background:rgba(16,185,129,0.12);color:#6ee7b7">under 4 weeks</span>
+      <div class="init-detail">
+        <p><strong>Characteristics:</strong> High certainty, narrow scope, usually rule-based or simple ML. Data is already clean and available.</p>
+        <p><strong>When to prioritise:</strong> Early in the AI journey to build credibility and demonstrate ROI. Also useful when stakeholder trust is low.</p>
+        <p><strong>Risk level:</strong> Low — outcome is largely predictable before you start.</p>
+        <p><strong>Measure success by:</strong> Adoption rate, time saved, error rate reduction. Should be measurable within 2 weeks of launch.</p>
+      </div>
+    </div>
+
+    <div class="card init-card" onclick="toggleInit(this)">
+      <div class="card-header">
+        <div class="card-icon" style="background:rgba(99,102,241,0.12);margin-bottom:0">🧠</div>
+        <h3>Core ML Features</h3>
+        <span class="expand-icon">+</span>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-top:0.5rem">Classification, recommendation, ranking</p>
+      <span class="tag" style="background:rgba(99,102,241,0.12);color:#a5b4fc">1–3 months</span>
+      <div class="init-detail">
+        <p><strong>Characteristics:</strong> Standard ML problems with established approaches. Data work is the main variable. Model architecture is known.</p>
+        <p><strong>When to prioritise:</strong> When you have clean labelled data and a well-defined business problem with measurable outcome.</p>
+        <p><strong>Risk level:</strong> Medium — data quality and labelling time are the main unknowns.</p>
+        <p><strong>Measure success by:</strong> Offline metrics (accuracy, F1, NDCG) and online business metrics (CTR, conversion, revenue).</p>
+      </div>
+    </div>
+
+    <div class="card init-card" onclick="toggleInit(this)">
+      <div class="card-header">
+        <div class="card-icon" style="background:rgba(245,158,11,0.12);margin-bottom:0">🏗️</div>
+        <h3>Platform Investments</h3>
+        <span class="expand-icon">+</span>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-top:0.5rem">MLOps, feature store, model registry</p>
+      <span class="tag" style="background:rgba(245,158,11,0.12);color:#fcd34d">3–6 months</span>
+      <div class="init-detail">
+        <p><strong>Characteristics:</strong> Foundational infrastructure that enables faster future delivery. No direct user-facing value but multiplies team output.</p>
+        <p><strong>When to prioritise:</strong> When teams are duplicating data pipeline or serving work, or when MLOps is a manual bottleneck.</p>
+        <p><strong>Risk level:</strong> Low technical risk, high organisational risk — hard to get funding for invisible infrastructure.</p>
+        <p><strong>Measure success by:</strong> Time to deploy a new model, experiment velocity, incident frequency.</p>
+      </div>
+    </div>
+
+    <div class="card init-card" onclick="toggleInit(this)">
+      <div class="card-header">
+        <div class="card-icon" style="background:rgba(244,63,94,0.12);margin-bottom:0">🚀</div>
+        <h3>Moonshots</h3>
+        <span class="expand-icon">+</span>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-top:0.5rem">Generative AI, agents, novel capabilities</p>
+      <span class="tag" style="background:rgba(244,63,94,0.12);color:#fda4af">6+ months</span>
+      <div class="init-detail">
+        <p><strong>Characteristics:</strong> High uncertainty on both technical feasibility and business impact. May require new data sources, new infrastructure, and new evaluation frameworks.</p>
+        <p><strong>When to prioritise:</strong> When the potential upside justifies the risk and the organisation has enough ML maturity to de-risk effectively.</p>
+        <p><strong>Risk level:</strong> High — timelines and outcomes are highly uncertain. Treat as research investment, not product roadmap item.</p>
+        <p><strong>Measure success by:</strong> Prototype quality gates, not production shipping dates. Set stage gates: proof of concept, pilot, production.</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- Section 3: Scoring Framework -->
+<section class="section">
+  <div class="section-label">Scoring Framework</div>
+  <h2>Score AI initiatives objectively — edit scores to compare</h2>
+  <p class="section-intro">Rate each initiative across five dimensions (1–5). The weighted total gives you a defensible, comparable score. Adjust weights to match your organisation's current priorities.</p>
+  <div style="overflow-x:auto">
+    <table class="scale-table" id="scoring-table">
+      <thead>
+        <tr>
+          <th>Initiative</th>
+          <th>Business Impact <span style="color:var(--accent);font-size:10px">×2</span></th>
+          <th>Data Availability <span style="color:var(--accent);font-size:10px">×2</span></th>
+          <th>Technical Feasibility <span style="color:var(--accent);font-size:10px">×1.5</span></th>
+          <th>Time to Value <span style="color:var(--accent);font-size:10px">×1.5</span></th>
+          <th>Strategic Alignment <span style="color:var(--accent);font-size:10px">×1</span></th>
+          <th>Total / 40</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr id="row-0">
+          <td><strong>Churn prediction model</strong></td>
+          <td><input class="score-input" type="number" min="1" max="5" value="5" oninput="calcScore()"></td>
+          <td><input class="score-input" type="number" min="1" max="5" value="4" oninput="calcScore()"></td>
+          <td><input class="score-input" type="number" min="1" max="5" value="4" oninput="calcScore()"></td>
+          <td><input class="score-input" type="number" min="1" max="5" value="3" oninput="calcScore()"></td>
+          <td><input class="score-input" type="number" min="1" max="5" value="5" oninput="calcScore()"></td>
+          <td><span class="score-total" id="total-0">—</span></td>
+        </tr>
+        <tr id="row-1">
+          <td><strong>Recommendation engine</strong></td>
+          <td><input class="score-input" type="number" min="1" max="5" value="4" oninput="calcScore()"></td>
+          <td><input class="score-input" type="number" min="1" max="5" value="3" oninput="calcScore()"></td>
+          <td><input class="score-input" type="number" min="1" max="5" value="3" oninput="calcScore()"></td>
+          <td><input class="score-input" type="number" min="1" max="5" value="2" oninput="calcScore()"></td>
+          <td><input class="score-input" type="number" min="1" max="5" value="4" oninput="calcScore()"></td>
+          <td><span class="score-total" id="total-1">—</span></td>
+        </tr>
+        <tr id="row-2">
+          <td><strong>Document summarisation (LLM)</strong></td>
+          <td><input class="score-input" type="number" min="1" max="5" value="3" oninput="calcScore()"></td>
+          <td><input class="score-input" type="number" min="1" max="5" value="5" oninput="calcScore()"></td>
+          <td><input class="score-input" type="number" min="1" max="5" value="4" oninput="calcScore()"></td>
+          <td><input class="score-input" type="number" min="1" max="5" value="5" oninput="calcScore()"></td>
+          <td><input class="score-input" type="number" min="1" max="5" value="3" oninput="calcScore()"></td>
+          <td><span class="score-total" id="total-2">—</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="font-size:12px;color:var(--muted);margin-top:0.75rem">Highlighted row = highest total score. Edit any cell to recalculate. Formula: (Impact×2) + (Data×2) + (Feasibility×1.5) + (TimeToValue×1.5) + (Alignment×1). Max = 40.</p>
+</section>
+
+<!-- Section 4: Build vs Buy -->
+<section class="section">
+  <div class="section-label">Build vs Buy</div>
+  <h2>When to build vs buy AI capabilities</h2>
+  <p class="section-intro">The wrong decision here wastes months. Build when it is your core differentiator. Buy or use open source when it is a commodity.</p>
+  <div class="matrix">
+    <div class="matrix-cell" style="border-color:rgba(16,185,129,0.3)">
+      <div class="matrix-label" style="color:var(--green)">Build</div>
+      <h4>Core differentiator</h4>
+      <p>When the ML capability is what makes your product unique and defensible. Building creates proprietary data flywheels and IP. Examples: TikTok's recommendation system, Stripe's fraud model.</p>
+      <span class="tag" style="background:rgba(16,185,129,0.12);color:#6ee7b7">If it's your moat</span>
+    </div>
+    <div class="matrix-cell" style="border-color:rgba(99,102,241,0.3)">
+      <div class="matrix-label" style="color:#a5b4fc">Buy / Use APIs</div>
+      <h4>Commodity capabilities</h4>
+      <p>Sentiment analysis, translation, OCR, speech-to-text — these are solved problems. Use Azure AI, OpenAI, Google AI, or AWS AI services. Don't rebuild what is already solved.</p>
+      <span class="tag" style="background:rgba(99,102,241,0.12);color:#a5b4fc">If it's commodity</span>
+    </div>
+    <div class="matrix-cell" style="border-color:rgba(245,158,11,0.3)">
+      <div class="matrix-label" style="color:#fcd34d">Open Source</div>
+      <h4>When flexibility matters</h4>
+      <p>Use open-source models (Llama, Mistral, HuggingFace) when you need customisation, data privacy, or cost control, but don't need to train from scratch. Gives control without full build cost.</p>
+      <span class="tag" style="background:rgba(245,158,11,0.12);color:#fcd34d">Control + speed</span>
+    </div>
+    <div class="matrix-cell" style="border-color:rgba(167,139,250,0.3)">
+      <div class="matrix-label" style="color:#c4b5fd">Partner</div>
+      <h4>Domain expertise needed</h4>
+      <p>For highly specialised domains (medical imaging, legal NLP, financial risk) where a specialist vendor has years of labelled data and domain knowledge you cannot replicate quickly.</p>
+      <span class="tag" style="background:rgba(167,139,250,0.12);color:#c4b5fd">Domain is the moat</span>
+    </div>
+  </div>
+</section>
+
+<!-- Section 5: Stakeholder Alignment -->
+<section class="section">
+  <div class="section-label">Stakeholder Alignment</div>
+  <h2>Getting buy-in for AI investment</h2>
+  <p class="section-intro">Different stakeholders need to hear different things. The technical truth stays the same — the framing must fit the audience and their incentives.</p>
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-icon" style="background:rgba(16,185,129,0.12)">💰</div>
+      <h3>Finance / CFO</h3>
+      <p>Lead with cost reduction, revenue impact, and risk mitigation. Use ranges. Show payback period. Separate infrastructure investment from model development cost. Include compute and re-training in TCO.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(99,102,241,0.12)">⚙️</div>
+      <h3>Engineering leadership</h3>
+      <p>Lead with technical feasibility, data availability, and infrastructure readiness. Show you have a plan for MLOps, monitoring, and failure handling. Acknowledge uncertainty honestly.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(34,211,238,0.12)">🎯</div>
+      <h3>Product leadership</h3>
+      <p>Lead with user value and timeline to first value. Show how AI improves a metric they already care about. Separate the research phase from the product shipping phase clearly.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(244,63,94,0.12)">⚖️</div>
+      <h3>Legal / Compliance</h3>
+      <p>Lead with risk guardrails, explainability, and audit trails. Show bias testing plans, data governance, and EU AI Act or GDPR compliance considerations. Never surprise legal with AI in production.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Section 6: Quarterly Planning -->
+<section class="section">
+  <div class="section-label">Quarterly Planning</div>
+  <h2>How to structure an AI quarterly roadmap</h2>
+  <p class="section-intro">Divide capacity across three buckets every quarter: platform (infrastructure that enables the team), features (user-facing AI), and experiments (high-uncertainty research). Balance matters.</p>
+  <div class="quarter-grid">
+    <div class="q-col">
+      <div class="q-header" style="color:var(--accent2)">Q1 — Foundation</div>
+      <div class="q-band" style="background:rgba(99,102,241,0.06)">
+        <div style="font-size:10px;font-weight:600;color:#a5b4fc;margin-bottom:0.25rem">PLATFORM 40%</div>
+        Feature store, model registry setup
+      </div>
+      <div class="q-band" style="background:rgba(34,211,238,0.04)">
+        <div style="font-size:10px;font-weight:600;color:var(--accent2);margin-bottom:0.25rem">FEATURES 40%</div>
+        1 core ML feature end-to-end
+      </div>
+      <div class="q-band" style="background:rgba(167,139,250,0.04)">
+        <div style="font-size:10px;font-weight:600;color:#c4b5fd;margin-bottom:0.25rem">EXPERIMENTS 20%</div>
+        Validate one moonshot hypothesis
+      </div>
+    </div>
+    <div class="q-col">
+      <div class="q-header" style="color:var(--green)">Q2 — Deliver</div>
+      <div class="q-band" style="background:rgba(99,102,241,0.06)">
+        <div style="font-size:10px;font-weight:600;color:#a5b4fc;margin-bottom:0.25rem">PLATFORM 25%</div>
+        MLOps automation, monitoring
+      </div>
+      <div class="q-band" style="background:rgba(34,211,238,0.04)">
+        <div style="font-size:10px;font-weight:600;color:var(--accent2);margin-bottom:0.25rem">FEATURES 55%</div>
+        2–3 ML features in production
+      </div>
+      <div class="q-band" style="background:rgba(167,139,250,0.04)">
+        <div style="font-size:10px;font-weight:600;color:#c4b5fd;margin-bottom:0.25rem">EXPERIMENTS 20%</div>
+        Prototype from Q1 experiment
+      </div>
+    </div>
+    <div class="q-col">
+      <div class="q-header" style="color:var(--accent3)">Q3 — Scale</div>
+      <div class="q-band" style="background:rgba(99,102,241,0.06)">
+        <div style="font-size:10px;font-weight:600;color:#a5b4fc;margin-bottom:0.25rem">PLATFORM 20%</div>
+        Drift monitoring, retraining pipelines
+      </div>
+      <div class="q-band" style="background:rgba(34,211,238,0.04)">
+        <div style="font-size:10px;font-weight:600;color:var(--accent2);margin-bottom:0.25rem">FEATURES 60%</div>
+        Scale winning features, iterate
+      </div>
+      <div class="q-band" style="background:rgba(167,139,250,0.04)">
+        <div style="font-size:10px;font-weight:600;color:#c4b5fd;margin-bottom:0.25rem">EXPERIMENTS 20%</div>
+        Next quarter moonshot validation
+      </div>
+    </div>
+    <div class="q-col">
+      <div class="q-header" style="color:var(--purple)">Q4 — Invest</div>
+      <div class="q-band" style="background:rgba(99,102,241,0.06)">
+        <div style="font-size:10px;font-weight:600;color:#a5b4fc;margin-bottom:0.25rem">PLATFORM 30%</div>
+        Next-year infra investment
+      </div>
+      <div class="q-band" style="background:rgba(34,211,238,0.04)">
+        <div style="font-size:10px;font-weight:600;color:var(--accent2);margin-bottom:0.25rem">FEATURES 40%</div>
+        Consolidate, reduce model debt
+      </div>
+      <div class="q-band" style="background:rgba(167,139,250,0.04)">
+        <div style="font-size:10px;font-weight:600;color:#c4b5fd;margin-bottom:0.25rem">EXPERIMENTS 30%</div>
+        Moonshot ramp-up for next year
+      </div>
+    </div>
+  </div>
+  <div class="card-grid" style="margin-top:1.5rem">
+    <div class="card"><div class="card-icon" style="background:rgba(99,102,241,0.12)">📌</div><h3>Never drop below 20% platform</h3><p>Platform investment below 20% means the team accumulates infrastructure debt that blocks delivery in the following quarter.</p></div>
+    <div class="card"><div class="card-icon" style="background:rgba(34,211,238,0.12)">🔬</div><h3>Always protect experiment budget</h3><p>Experiments are how you generate next year's roadmap. Cutting them means shipping the same ideas forever — competitors who experiment overtake you.</p></div>
+    <div class="card"><div class="card-icon" style="background:rgba(245,158,11,0.12)">⚖️</div><h3>Re-estimate at each quarter gate</h3><p>AI timelines shift as you learn. Re-score initiatives at the start of each quarter with updated information — don't hold to a plan made without data.</p></div>
+  </div>
+</section>
+
+<!-- Section 7: Common Pitfalls -->
+<section class="section">
+  <div class="section-label">Common Pitfalls</div>
+  <h2>Prioritisation mistakes that waste AI investment</h2>
+  <p class="section-intro">These four mistakes are the most common causes of AI roadmaps that fail to deliver value on time or at all.</p>
+  <div class="card-grid">
+    <div class="card" style="border-color:rgba(244,63,94,0.2)">
+      <div class="card-icon" style="background:rgba(244,63,94,0.12)">❌</div>
+      <h3>Over-investing in moonshots</h3>
+      <p>Dedicating more than 30% of capacity to high-uncertainty moonshots with no quick wins means 6 months pass with nothing to show stakeholders.</p>
+      <span class="tag" style="background:rgba(244,63,94,0.12);color:#fda4af">Credibility risk</span>
+    </div>
+    <div class="card" style="border-color:rgba(244,63,94,0.2)">
+      <div class="card-icon" style="background:rgba(244,63,94,0.12)">❌</div>
+      <h3>Ignoring data quality</h3>
+      <p>Prioritising model work before confirming data quality means discovering fundamental data problems mid-project when the timeline is already committed.</p>
+      <span class="tag" style="background:rgba(244,63,94,0.12);color:#fda4af">Sunk cost risk</span>
+    </div>
+    <div class="card" style="border-color:rgba(244,63,94,0.2)">
+      <div class="card-icon" style="background:rgba(244,63,94,0.12)">❌</div>
+      <h3>No success metrics upfront</h3>
+      <p>Starting an AI initiative without defining what "done" looks like means stakeholders can always move the goalposts and the project never officially succeeds.</p>
+      <span class="tag" style="background:rgba(244,63,94,0.12);color:#fda4af">Governance risk</span>
+    </div>
+    <div class="card" style="border-color:rgba(244,63,94,0.2)">
+      <div class="card-icon" style="background:rgba(244,63,94,0.12)">❌</div>
+      <h3>Underestimating infra cost</h3>
+      <p>The business case includes model development cost but not training compute, serving infrastructure, monitoring tooling, or data labelling costs. Budgets blow out.</p>
+      <span class="tag" style="background:rgba(244,63,94,0.12);color:#fda4af">Budget risk</span>
+    </div>
+  </div>
+</section>
+
+<!-- Section 8: End-to-end walkthrough -->
+<section class="section">
+  <div class="section-label">Prioritisation Walkthrough</div>
+  <h2>From initiative list to prioritised roadmap</h2>
+  <p class="section-intro">A step-by-step process for converting a list of AI ideas into a sequenced, defensible quarterly roadmap.</p>
+  <div class="answer-box">
+    <p><strong style="color:var(--accent2)">Step 1 — Collect and categorise initiatives:</strong> Start with a raw list of AI ideas from across the organisation. Categorise each as: quick win, core ML feature, platform investment, or moonshot. Discard ideas with no clear business owner — they will never get traction.</p>
+    <p><strong style="color:var(--accent2)">Step 2 — Score each initiative:</strong> Apply the 5-dimension scoring framework (business impact, data availability, technical feasibility, time to value, strategic alignment). Use the weighted formula. Involve one data scientist and one product stakeholder in scoring to reduce bias.</p>
+    <p><strong style="color:var(--accent2)">Step 3 — Apply the build vs buy filter:</strong> For every initiative, ask whether this is a core differentiator or a commodity. Replace commodity work with vendor APIs or open-source models. This can cut the build list by 30–50%.</p>
+    <p><strong style="color:var(--accent2)">Step 4 — Sequence by data readiness:</strong> Sort top-scored initiatives by data availability. Initiatives with clean, available data ship first. Initiatives requiring labelling, data acquisition, or governance approval are pushed to a later quarter, and data work begins in advance.</p>
+    <p><strong style="color:var(--accent2)">Step 5 — Allocate to quarters using the 40/40/20 rule:</strong> Allocate platform work (40% in Q1, dropping to 20% by Q3), feature work (40–60%), and experiments (20–30%) each quarter. Ensure at least one quick win ships in Q1.</p>
+    <p><strong style="color:var(--accent)">North star principle:</strong> Every item on the AI roadmap must connect directly to a business metric. If you cannot complete the sentence "this initiative will move [metric] by [range] because [mechanism]", it is not ready to be on the roadmap.</p>
+  </div>
+</section>
+
+<footer>
+  <span>Kuldeep Rao</span> · AI Roadmap Prioritisation
+</footer>
+
+<script>
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.section').forEach(s => observer.observe(s));
+
+function toggleInit(el) {
+  el.classList.toggle('open');
+}
+
+// Scoring table calculation
+var weights = [2, 2, 1.5, 1.5, 1]; // per column
+
+function calcScore() {
+  var maxTotal = 40; // 5*(2+2+1.5+1.5+1) = 5*8 = 40
+  var totals = [];
+  for (var r = 0; r < 3; r++) {
+    var row = document.getElementById('row-' + r);
+    var inputs = row.querySelectorAll('.score-input');
+    var sum = 0;
+    inputs.forEach(function(inp, i) {
+      var v = Math.min(5, Math.max(1, parseInt(inp.value) || 1));
+      sum += v * weights[i];
+    });
+    totals.push(sum);
+    document.getElementById('total-' + r).textContent = sum.toFixed(1);
+  }
+  // Highlight winner
+  var maxScore = Math.max.apply(null, totals);
+  for (var r = 0; r < 3; r++) {
+    var row = document.getElementById('row-' + r);
+    if (totals[r] === maxScore) {
+      row.classList.add('score-winner');
+    } else {
+      row.classList.remove('score-winner');
+    }
+  }
+}
+
+// Run on load
+calcScore();
+</script>
+</body>
+</html>

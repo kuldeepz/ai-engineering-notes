@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Incident Correlation — AIOps End-to-End Guide</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+:root{--bg:#0f1117;--bg2:#161b27;--bg3:#1e2535;--border:rgba(255,255,255,0.08);--text:#e2e8f0;--muted:#8892a4;--accent:#6366f1;--accent2:#22d3ee;--accent3:#f59e0b;--green:#10b981;--red:#f43f5e;--purple:#a78bfa;--font:'Inter',sans-serif;--mono:'JetBrains Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.7;overflow-x:hidden}
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4rem 2rem;position:relative;overflow:hidden}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(245,158,11,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(245,158,11,0.05) 1px,transparent 1px);background-size:48px 48px;mask-image:radial-gradient(ellipse at center,black 30%,transparent 80%)}
+.hero-glow{position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(245,158,11,0.09) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25);border-radius:100px;padding:6px 16px;font-size:12px;font-weight:500;color:#fcd34d;margin-bottom:2rem;letter-spacing:0.05em;text-transform:uppercase}
+.hero h1{font-size:clamp(2.5rem,6vw,4.5rem);font-weight:600;letter-spacing:-0.03em;line-height:1.1;margin-bottom:1.5rem;position:relative}
+.hero h1 span{background:linear-gradient(135deg,#f59e0b,#f43f5e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero p{font-size:1.15rem;color:var(--muted);max-width:620px;margin-bottom:3rem;position:relative}
+.hero-stats{display:flex;gap:3rem;position:relative;flex-wrap:wrap;justify-content:center}
+.stat{text-align:center}.stat-num{font-size:2rem;font-weight:600;color:var(--accent3);font-family:var(--mono)}.stat-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em}
+.scroll-hint{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);color:var(--muted);font-size:12px;display:flex;flex-direction:column;align-items:center;gap:8px;animation:bounce 2s ease-in-out infinite}
+@keyframes bounce{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(8px)}}
+.section{max-width:960px;margin:0 auto;padding:5rem 2rem;opacity:0;transform:translateY(30px);transition:opacity 0.6s ease,transform 0.6s ease}
+.section.visible{opacity:1;transform:translateY(0)}
+.section-label{font-size:11px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent3);margin-bottom:0.75rem}
+.section h2{font-size:clamp(1.6rem,3vw,2.2rem);font-weight:600;letter-spacing:-0.02em;margin-bottom:1rem;line-height:1.2}
+.section-intro{color:var(--muted);font-size:1.05rem;max-width:700px;margin-bottom:3rem}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1.5rem;transition:border-color 0.2s,transform 0.2s}
+.card:hover{border-color:rgba(245,158,11,0.25);transform:translateY(-2px)}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem}
+.card-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:1rem}
+.card h3{font-size:1rem;font-weight:600;margin-bottom:0.5rem}.card p{font-size:13px;color:var(--muted);line-height:1.6}
+.tag{display:inline-block;font-size:11px;font-weight:500;padding:3px 10px;border-radius:100px;margin-top:0.75rem}
+.tab-controls{display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1.5rem;border-bottom:1px solid var(--border);padding-bottom:1rem}
+.tab-btn{padding:8px 18px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--muted);font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.2s}
+.tab-btn.active{background:rgba(245,158,11,0.1);border-color:rgba(245,158,11,0.25);color:#fcd34d}
+.tab-btn:hover:not(.active){color:var(--text)}
+.tab-panel{display:none;animation:fadeIn 0.3s ease}.tab-panel.active{display:block}
+.flow{display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin:1.5rem 0}
+.flow-node{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.6rem 1rem;font-size:12px;font-weight:500;text-align:center;min-width:90px;line-height:1.4}
+.flow-arrow{color:var(--muted);font-size:16px;flex-shrink:0}
+.flow-node.hi{background:rgba(245,158,11,0.08);border-color:rgba(245,158,11,0.3);color:#fcd34d}
+.scale-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:1.5rem}
+.scale-table th{text-align:left;padding:10px 16px;background:var(--bg3);color:var(--muted);font-weight:500;font-size:11px;letter-spacing:0.08em;text-transform:uppercase}
+.scale-table th:first-child{border-radius:8px 0 0 8px}.scale-table th:last-child{border-radius:0 8px 8px 0}
+.scale-table td{padding:12px 16px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.6}
+.scale-table tr:last-child td{border-bottom:none}.scale-table tr:hover td{background:rgba(255,255,255,0.02)}
+.answer-box{background:linear-gradient(135deg,rgba(245,158,11,0.07),rgba(244,63,94,0.04));border:1px solid rgba(245,158,11,0.2);border-radius:16px;padding:2rem;margin-top:2rem}
+.answer-box p{font-size:14px;color:var(--muted);line-height:1.9}.answer-box p+p{margin-top:0.75rem}
+.code-block{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:1.25rem 1.5rem;font-family:var(--mono);font-size:12px;line-height:1.8;overflow-x:auto;margin-top:1rem}
+.cc{color:#6b7280}.ck{color:#a78bfa}.cs{color:#34d399}.cf{color:#60a5fa}.cn{color:#f59e0b}
+.badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:500}
+.divider{width:100%;height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:1.5rem 0}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:3px}
+/* approach cards */
+.approach-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-top:1.5rem}
+.approach-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1.25rem;cursor:pointer;transition:all 0.2s}
+.approach-card:hover{border-color:rgba(245,158,11,0.3)}
+.approach-card.selected{border-color:rgba(245,158,11,0.5);background:rgba(245,158,11,0.06)}
+.approach-card h4{font-size:13px;font-weight:600;margin-bottom:0.35rem}
+.approach-card .ap-sub{font-size:11px;color:var(--muted)}
+.approach-detail{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-top:1rem;display:none;animation:fadeIn 0.3s ease}
+.approach-detail.visible{display:block}
+/* timeline */
+.timeline{position:relative;padding-left:2rem;margin-top:1.5rem}
+.timeline::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,var(--accent3),var(--red))}
+.tl-event{position:relative;margin-bottom:1.5rem}
+.tl-event::before{content:'';position:absolute;left:-2.4rem;top:0.4rem;width:10px;height:10px;border-radius:50%;background:var(--accent3);border:2px solid var(--bg)}
+.tl-event.correlated::before{background:var(--green)}
+.tl-event.suppressed::before{background:var(--muted)}
+.tl-time{font-size:11px;font-family:var(--mono);color:var(--muted);margin-bottom:2px}
+.tl-content{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:0.6rem 1rem;font-size:12px}
+.tl-event.correlated .tl-content{border-color:rgba(16,185,129,0.3);color:var(--green)}
+.tl-event.suppressed .tl-content{opacity:0.5;text-decoration:line-through;color:var(--muted)}
+/* topo diagram */
+.topo{display:flex;flex-direction:column;align-items:center;gap:0.75rem;padding:1.5rem;background:var(--bg3);border:1px solid var(--border);border-radius:14px;margin-top:1.5rem}
+.topo-row{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
+.topo-node{padding:0.5rem 1rem;border-radius:8px;font-size:12px;font-weight:500;text-align:center;min-width:80px}
+.topo-infra{background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.3);color:#a5b4fc}
+.topo-app{background:rgba(34,211,238,0.1);border:1px solid rgba(34,211,238,0.25);color:#67e8f9}
+.topo-svc{background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);color:#34d399}
+.topo-alert{background:rgba(244,63,94,0.12);border:1px solid rgba(244,63,94,0.3);color:#f43f5e}
+.topo-connector{color:var(--muted);font-size:12px;text-align:center}
+/* noise metric cards */
+.noise-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.25rem;text-align:center}
+.noise-before{font-size:1.8rem;font-weight:700;color:var(--red);font-family:var(--mono)}
+.noise-after{font-size:1.8rem;font-weight:700;color:var(--green);font-family:var(--mono)}
+.noise-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-top:4px}
+.noise-arrow{font-size:1.2rem;color:var(--accent3);margin:0.25rem 0}
+footer{text-align:center;padding:3rem 2rem;color:var(--muted);font-size:13px;border-top:1px solid var(--border)}
+footer span{color:var(--accent3);font-weight:500}
+@media(max-width:640px){.hero-stats{gap:1.5rem}.flow{flex-direction:column}.flow-arrow{transform:rotate(90deg)}.tab-btn{padding:6px 12px;font-size:12px}.topo-row{flex-direction:column;align-items:center}}
+@media(prefers-reduced-motion:reduce){*,.section{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-badge">AIOps · ITSM · Correlation · Event Management</div>
+  <h1>Incident<br><span>Correlation</span></h1>
+  <p>AIOps End-to-End Guide — transform thousands of raw alerts into a handful of actionable incidents with ML-powered correlation.</p>
+  <div class="hero-stats">
+    <div class="stat"><div class="stat-num">3</div><div class="stat-label">Correlation Methods</div></div>
+    <div class="stat"><div class="stat-num">10×</div><div class="stat-label">Noise Reduction</div></div>
+    <div class="stat"><div class="stat-num">5</div><div class="stat-label">Pattern Types</div></div>
+    <div class="stat"><div class="stat-num">real-time</div><div class="stat-label">Processing</div></div>
+  </div>
+  <div class="scroll-hint"><span>scroll</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg></div>
+</section>
+
+<!-- Section 1: Foundation -->
+<div class="section">
+  <div class="section-label">01 — Foundation</div>
+  <h2>What is incident correlation and why ITSM teams need it</h2>
+  <p class="section-intro">Modern infrastructure generates thousands of events per second. Without correlation, every alert becomes a separate ticket. With it, 1000 alerts become 1 incident.</p>
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-icon" style="background:rgba(244,63,94,0.12)">🌊</div>
+      <h3>The Event Storm Problem</h3>
+      <p>A single database outage triggers alerts from every service that depends on it — network, app, API gateway, load balancer, health checks. NOC teams receive 500–5000 alerts within minutes, all for the same root cause. MTTD explodes as operators drown in noise.</p>
+      <span class="tag" style="background:rgba(244,63,94,0.12);color:#f43f5e">1 outage → 1000 alerts</span>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(16,185,129,0.1)">🔗</div>
+      <h3>What Correlation Does</h3>
+      <p>Groups related alerts from different monitoring tools and infrastructure layers into a single parent incident. Surfaces the root cause alert and suppresses downstream symptom alerts. Operators see 1 incident instead of 1000 tickets.</p>
+      <span class="tag" style="background:rgba(16,185,129,0.1);color:#10b981">1000 alerts → 1 incident</span>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(245,158,11,0.1)">⚠️</div>
+      <h3>Why Rule-Based Fails at Scale</h3>
+      <p>Hand-written correlation rules require exhaustive knowledge of every possible alert combination. At 10k+ services, the rule space is combinatorially impossible to maintain. Rules break with every infrastructure change and cannot learn new patterns.</p>
+      <span class="tag" style="background:rgba(245,158,11,0.1);color:#f59e0b">Unmaintainable at scale</span>
+    </div>
+  </div>
+</div>
+
+<!-- Section 2: Approaches -->
+<div class="section">
+  <div class="section-label">02 — Approaches</div>
+  <h2>Four correlation approaches — click each</h2>
+  <p class="section-intro">Each approach has different accuracy, maintenance cost, and applicability. Production systems layer multiple approaches for maximum coverage.</p>
+
+  <div class="approach-grid">
+    <div class="approach-card selected" onclick="selectApproach('rule', this)">
+      <h4>Rule-Based</h4>
+      <div class="ap-sub">Time window + topology</div>
+    </div>
+    <div class="approach-card" onclick="selectApproach('stat', this)">
+      <h4>Statistical</h4>
+      <div class="ap-sub">Similarity + clustering</div>
+    </div>
+    <div class="approach-card" onclick="selectApproach('ml', this)">
+      <h4>ML-Based</h4>
+      <div class="ap-sub">Learned patterns</div>
+    </div>
+    <div class="approach-card" onclick="selectApproach('llm', this)">
+      <h4>LLM-Based</h4>
+      <div class="ap-sub">Semantic understanding</div>
+    </div>
+  </div>
+
+  <div id="approach-detail" class="approach-detail visible">
+    <div id="approach-detail-content">
+      <strong style="color:var(--accent3)">Rule-Based Correlation</strong><br>
+      <span style="font-size:13px;color:var(--muted)">
+        Predefined rules correlate alerts based on time windows, source topology, and alert type patterns. Example: "group all alerts from the same host within 5 minutes."<br><br>
+        <strong style="color:var(--text)">How it works:</strong> Alert A fires. A time window opens (e.g., 5 min). Any alert matching the rule's topology condition (same host, same VLAN, same service) is grouped under A.<br><br>
+        <strong style="color:var(--text)">Accuracy:</strong> High for known patterns, 0% for unknown patterns. Brittle — breaks on infrastructure changes.<br><br>
+        <strong style="color:var(--text)">Best for:</strong> Well-understood, stable environments with a limited alert taxonomy. Starting point for any correlation system.
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- Section 3: Architecture -->
+<div class="section">
+  <div class="section-label">03 — Architecture</div>
+  <h2>The correlation pipeline — click each stage</h2>
+  <p class="section-intro">Five stages transform a raw event stream into actionable, correlated incidents with identified root causes and suppressed noise.</p>
+
+  <div class="tab-controls">
+    <button class="tab-btn active" onclick="switchTab('arch-ingest', this)">Event Ingestion</button>
+    <button class="tab-btn" onclick="switchTab('arch-dedup', this)">Deduplication</button>
+    <button class="tab-btn" onclick="switchTab('arch-group', this)">Grouping</button>
+    <button class="tab-btn" onclick="switchTab('arch-rca', this)">Root Cause ID</button>
+    <button class="tab-btn" onclick="switchTab('arch-suppress', this)">Suppression</button>
+  </div>
+
+  <div id="arch-ingest" class="tab-panel active">
+    <div class="card">
+      <h3>Event Ingestion</h3>
+      <p style="margin-top:0.5rem;color:var(--muted);font-size:13px">Collect events from all monitoring sources into a single normalized stream. Events arrive from Nagios, Prometheus, Datadog, CloudWatch, SNMP traps, log-based alerting, and APM tools — all in different formats.</p>
+      <div class="divider"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;font-size:12px;margin-top:0.5rem">
+        <div>
+          <div style="color:var(--accent3);font-weight:600;margin-bottom:6px">Normalization schema</div>
+          <div style="color:var(--muted)">Every event maps to: timestamp, source_host, source_tool, severity, alert_name, description, CMDB_CI_id, raw_payload. Missing fields are inferred from CMDB lookup.</div>
+        </div>
+        <div>
+          <div style="color:var(--accent3);font-weight:600;margin-bottom:6px">Throughput considerations</div>
+          <div style="color:var(--muted)">Use a message queue (Kafka) as the ingestion buffer. Consumers normalize and enrich events with CMDB data. Target: sub-100ms end-to-end ingestion latency.</div>
+        </div>
+      </div>
+      <div class="flow" style="margin-top:1rem">
+        <div class="flow-node" style="font-size:11px">Nagios</div>
+        <div class="flow-arrow">↘</div>
+        <div class="flow-node hi">Kafka Queue</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node hi">Normalizer</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node hi">Enrichment</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="arch-dedup" class="tab-panel">
+    <div class="card">
+      <h3>Deduplication</h3>
+      <p style="margin-top:0.5rem;color:var(--muted);font-size:13px">The same underlying alert often fires multiple times — from re-evaluations, duplicate monitoring tools, or alert flapping. Deduplication collapses these into a single event before correlation begins.</p>
+      <div class="divider"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;font-size:12px;margin-top:0.5rem">
+        <div>
+          <div style="color:var(--accent3);font-weight:600;margin-bottom:6px">Dedup key</div>
+          <div style="color:var(--muted)">Hash of: source_host + alert_name + severity. Events with the same key within a 10-minute window are counted but not duplicated. Counter tracks frequency.</div>
+        </div>
+        <div>
+          <div style="color:var(--accent3);font-weight:600;margin-bottom:6px">Flap detection</div>
+          <div style="color:var(--muted)">Alert that fires and clears more than 3 times in 15 minutes is flagged as "flapping." Flapping alerts are suppressed and create a single parent flap-detection ticket rather than N alerts.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="arch-group" class="tab-panel">
+    <div class="card">
+      <h3>Alert Grouping</h3>
+      <p style="margin-top:0.5rem;color:var(--muted);font-size:13px">Deduplicated events are grouped into candidate incidents using correlation algorithms. Grouping runs on overlapping sliding windows to catch slow-developing event cascades.</p>
+      <div class="divider"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;font-size:12px;margin-top:0.5rem">
+        <div>
+          <div style="color:var(--accent3);font-weight:600;margin-bottom:6px">Grouping signals</div>
+          <div style="color:var(--muted)">Temporal proximity (same 5-min window), topology proximity (shared infrastructure dependency), semantic similarity (&gt;0.8 cosine similarity of descriptions), historical co-occurrence (always correlated in past).</div>
+        </div>
+        <div>
+          <div style="color:var(--accent3);font-weight:600;margin-bottom:6px">Group scoring</div>
+          <div style="color:var(--muted)">Each candidate group gets a confidence score (0–1). Score &gt; 0.7 → auto-group and create incident. 0.4–0.7 → suggest to operator. &lt; 0.4 → treat as separate incident.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="arch-rca" class="tab-panel">
+    <div class="card">
+      <h3>Root Cause Identification</h3>
+      <p style="margin-top:0.5rem;color:var(--muted);font-size:13px">Within a correlated group, identify which alert represents the root cause vs downstream symptoms. The root cause alert is promoted as the incident title; symptoms are suppressed.</p>
+      <div class="divider"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;font-size:12px;margin-top:0.5rem">
+        <div>
+          <div style="color:var(--accent3);font-weight:600;margin-bottom:6px">RCA signals</div>
+          <div style="color:var(--muted)">Earliest alert in the group by timestamp (first fire = likely cause), highest infrastructure layer (network &gt; compute &gt; app &gt; service), CI dependency depth in CMDB, historical RCA labels from past incidents.</div>
+        </div>
+        <div>
+          <div style="color:var(--accent3);font-weight:600;margin-bottom:6px">ML approach</div>
+          <div style="color:var(--muted)">Train a ranking model on labeled historical incidents (operators confirmed root cause). Features: temporal order, topology depth, alert severity, historical co-occurrence frequency.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="arch-suppress" class="tab-panel">
+    <div class="card">
+      <h3>Alert Suppression</h3>
+      <p style="margin-top:0.5rem;color:var(--muted);font-size:13px">Once a parent incident is identified, all child alerts are suppressed from creating new tickets. They're stored as evidence but do not page the NOC. Operators see 1 incident, not 50 tickets.</p>
+      <div class="divider"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;font-size:12px;margin-top:0.5rem">
+        <div>
+          <div style="color:var(--accent3);font-weight:600;margin-bottom:6px">Suppression rules</div>
+          <div style="color:var(--muted)">New alerts matching active parent incident → suppress. Suppression window: parent incident is open + 5 minutes after resolution. Suppressed alerts appear in incident timeline.</div>
+        </div>
+        <div>
+          <div style="color:var(--accent3);font-weight:600;margin-bottom:6px">Suppression risks</div>
+          <div style="color:var(--muted)">Over-suppression can hide new independent incidents. Guard with: max suppression count (100 per parent), independent-signal threshold, manual override by NOC operators.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Section 4: Temporal Correlation -->
+<div class="section">
+  <div class="section-label">04 — Temporal Correlation</div>
+  <h2>Time-based pattern detection</h2>
+  <p class="section-intro">Time is the primary correlation signal. Events close in time are likely related. Temporal analysis also detects bursts, cascades, and repeating patterns.</p>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-icon" style="background:rgba(245,158,11,0.1)">🪟</div>
+      <h3>Sliding Window Approach</h3>
+      <p>A time window (e.g., 5 minutes) slides over the event stream. All events within the window are candidates for grouping. Overlapping windows ensure no event cascade is split across window boundaries.</p>
+      <p style="margin-top:0.5rem;font-size:12px;color:var(--accent3)">Window size is tunable: shorter (1 min) for fast-propagating failures, longer (15 min) for slow cascades across distributed systems.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(244,63,94,0.1)">💥</div>
+      <h3>Burst Detection</h3>
+      <p>An alert burst is a rapid spike in event volume within a short window. Bursts are the signature of cascading failures. Detect with: event count &gt; 3× rolling average in any 60-second window.</p>
+      <p style="margin-top:0.5rem;font-size:12px;color:var(--red)">Burst detection triggers aggressive correlation: all events in the burst window are forced into a single candidate group for RCA analysis.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(167,139,250,0.1)">🔁</div>
+      <h3>Repeating Patterns</h3>
+      <p>Some alerts fire on a repeating schedule — nightly batch jobs, weekend maintenance. These are classified as "known repeating" and suppressed automatically until their signature changes.</p>
+      <p style="margin-top:0.5rem;font-size:12px;color:var(--purple)">Pattern learned from 4+ weeks of history using time-of-week + alert-name fingerprint matching.</p>
+    </div>
+  </div>
+
+  <div style="margin-top:2rem">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:1rem;text-transform:uppercase;letter-spacing:0.1em">Event timeline — correlation window example</div>
+    <div class="timeline">
+      <div class="tl-event">
+        <div class="tl-time">14:03:01</div>
+        <div class="tl-content">DB-01: High connection count — <strong>ROOT CAUSE (first fire)</strong></div>
+      </div>
+      <div class="tl-event suppressed">
+        <div class="tl-time">14:03:08</div>
+        <div class="tl-content">APP-01: Database connection timeout → SUPPRESSED (child)</div>
+      </div>
+      <div class="tl-event suppressed">
+        <div class="tl-time">14:03:12</div>
+        <div class="tl-content">APP-02: Database connection timeout → SUPPRESSED (child)</div>
+      </div>
+      <div class="tl-event suppressed">
+        <div class="tl-time">14:03:15</div>
+        <div class="tl-content">API-GW: 5xx error rate spike → SUPPRESSED (child)</div>
+      </div>
+      <div class="tl-event suppressed">
+        <div class="tl-time">14:03:22</div>
+        <div class="tl-content">LB-01: Upstream health check failed → SUPPRESSED (child)</div>
+      </div>
+      <div class="tl-event correlated">
+        <div class="tl-time">14:03:25</div>
+        <div class="tl-content" style="border-color:rgba(16,185,129,0.4)">→ 1 INCIDENT CREATED: DB-01 High Connections (5 alerts correlated)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Section 5: Topology Correlation -->
+<div class="section">
+  <div class="section-label">05 — Topology-Based Correlation</div>
+  <h2>Infrastructure dependency mapping</h2>
+  <p class="section-intro">Topology data from the CMDB tells us which CIs depend on which. When a database alert fires, all dependent application alerts within the time window are children, not independent incidents.</p>
+
+  <div class="topo">
+    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.5rem">Infrastructure dependency topology</div>
+    <div class="topo-row">
+      <div class="topo-node topo-infra">DB-01<br><small style="opacity:0.7">Root Cause ⚠️</small></div>
+    </div>
+    <div class="topo-connector">↓ depends on DB-01</div>
+    <div class="topo-row">
+      <div class="topo-node topo-app">APP-01</div>
+      <div class="topo-node topo-app">APP-02</div>
+      <div class="topo-node topo-app">APP-03</div>
+    </div>
+    <div class="topo-connector">↓ depends on APP-*</div>
+    <div class="topo-row">
+      <div class="topo-node topo-svc">API Gateway</div>
+      <div class="topo-node topo-svc">Auth Service</div>
+    </div>
+    <div class="topo-connector">↓ user-facing</div>
+    <div class="topo-row">
+      <div class="topo-node topo-alert">503 errors reported<br><small style="opacity:0.7">Correlated symptom</small></div>
+    </div>
+    <div style="font-size:11px;color:var(--green);margin-top:0.75rem">All 7 alerts grouped under DB-01 incident — operators see 1 ticket</div>
+  </div>
+
+  <div class="card-grid" style="margin-top:2rem">
+    <div class="card">
+      <h3>CMDB Integration</h3>
+      <p>CI relationships from the CMDB are loaded into a graph database (Neo4j or in-memory adjacency list). Correlation engine traverses the graph to find all CIs affected downstream of a failing root CI.</p>
+      <span class="tag" style="background:rgba(245,158,11,0.1);color:#f59e0b">Graph traversal</span>
+    </div>
+    <div class="card">
+      <h3>Impact Radius</h3>
+      <p>Maximum hop count limits graph traversal (typically 3–4 hops). Beyond that, the relationship is too indirect to be a reliable correlation signal. Configurable per CI tier.</p>
+      <span class="tag" style="background:rgba(99,102,241,0.15);color:#a5b4fc">3–4 hop radius</span>
+    </div>
+    <div class="card">
+      <h3>Stale CMDB Risk</h3>
+      <p>A CMDB that is not kept current causes missed correlations or false groupings. Validate CMDB accuracy monthly. Use network discovery tools to detect undocumented dependencies.</p>
+      <span class="tag" style="background:rgba(244,63,94,0.1);color:#f43f5e">Maintenance critical</span>
+    </div>
+  </div>
+</div>
+
+<!-- Section 6: Noise Reduction Metrics -->
+<div class="section">
+  <div class="section-label">06 — Noise Reduction Metrics</div>
+  <h2>Measuring correlation effectiveness</h2>
+  <p class="section-intro">These metrics quantify how much the correlation system reduces operator workload and how accurately it groups related events.</p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:2rem">
+    <div class="noise-card">
+      <div class="noise-before">2,847</div>
+      <div class="noise-arrow">↓ 10×</div>
+      <div class="noise-after">284</div>
+      <div class="noise-label">Alert Volume / Week</div>
+    </div>
+    <div class="noise-card">
+      <div class="noise-before">38 min</div>
+      <div class="noise-arrow">↓</div>
+      <div class="noise-after">6 min</div>
+      <div class="noise-label">Mean Time to Detect</div>
+    </div>
+    <div class="noise-card">
+      <div class="noise-before">34%</div>
+      <div class="noise-arrow">↓</div>
+      <div class="noise-after">8%</div>
+      <div class="noise-label">False Positive Rate</div>
+    </div>
+    <div class="noise-card">
+      <div class="noise-before">0%</div>
+      <div class="noise-arrow">↑</div>
+      <div class="noise-after">71%</div>
+      <div class="noise-label">Suppression Rate</div>
+    </div>
+  </div>
+
+  <div class="card-grid">
+    <div class="card">
+      <h3>Compression Ratio</h3>
+      <p>Raw alerts / correlated incidents. Target: 5–15× for medium environments, 20–50× for large NOCs. Below 3× indicates correlation rules need tuning. Above 50× risks over-suppression.</p>
+    </div>
+    <div class="card">
+      <h3>Precision &amp; Recall</h3>
+      <p>Precision: what fraction of grouped alerts truly belong together. Recall: what fraction of truly related alerts are correctly grouped. Requires operator feedback labeling to measure.</p>
+    </div>
+    <div class="card">
+      <h3>Time-to-Noise-Free</h3>
+      <p>Time from first alert in an event storm to when the correlation engine has suppressed child alerts and presented the single parent incident. Target: &lt;30 seconds for burst events.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Section 7: Scale -->
+<div class="section">
+  <div class="section-label">07 — Scale</div>
+  <h2>Correlation at different NOC scales</h2>
+  <p class="section-intro">Architecture and algorithm choices must match operational scale. Small NOCs can use simpler approaches; enterprise and hyperscale require ML and streaming infrastructure.</p>
+
+  <table class="scale-table">
+    <thead>
+      <tr>
+        <th>Environment</th>
+        <th>Alert Volume</th>
+        <th>Correlation Approach</th>
+        <th>Infrastructure</th>
+        <th>Target Compression</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="badge" style="background:rgba(16,185,129,0.15);color:#10b981">Small NOC</span><br><small style="color:var(--muted)">&lt;500 CI</small></td>
+        <td>&lt;100 alerts/day</td>
+        <td>Rule-based time windows + topology. Single correlation server.</td>
+        <td>Single server, SQLite or Postgres, email alerts</td>
+        <td>3–5×</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:rgba(245,158,11,0.15);color:#f59e0b">Enterprise NOC</span><br><small style="color:var(--muted)">500–10k CI</small></td>
+        <td>1k–50k/day</td>
+        <td>Rules + statistical clustering + ML ranking model for RCA</td>
+        <td>Kafka, Redis for state, PostgreSQL + graph DB, PagerDuty</td>
+        <td>10–20×</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:rgba(167,139,250,0.15);color:#a78bfa">Hyperscale</span><br><small style="color:var(--muted)">&gt;100k CI</small></td>
+        <td>&gt;1M/day</td>
+        <td>ML + LLM semantic grouping + real-time streaming inference</td>
+        <td>Kafka Streams, Flink, vector DB for semantic search, multi-region</td>
+        <td>50–200×</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Section 8: End-to-End Solution -->
+<div class="section">
+  <div class="section-label">08 — End-to-End Solution</div>
+  <h2>Complete correlation system walkthrough</h2>
+  <p class="section-intro">From raw event stream to correlated incident with root cause — a production-grade AIOps correlation pipeline.</p>
+
+  <div class="answer-box">
+    <p><strong style="color:var(--accent3)">Step 1 — Event normalization.</strong> All monitoring tools publish events to a Kafka topic. A normalization consumer reads from the topic, enriches each event with CMDB CI data (host → CI_id, service tier, owner team), and writes the normalized event to the correlation engine state store. Any event missing a CMDB entry is flagged as "unknown CI" and treated independently.</p>
+    <p><strong style="color:var(--accent3)">Step 2 — Deduplication and flap detection.</strong> Events are keyed by (source_host, alert_name, severity). Events with the same key within 10 minutes increment a counter on the existing event rather than creating a new one. Events that fire and clear more than 3 times are classified as flapping and suppressed from correlation.</p>
+    <p><strong style="color:var(--accent3)">Step 3 — Correlation.</strong> A sliding window processor evaluates incoming events against three signals: temporal (same 5-minute window), topology (CI dependency graph within 3 hops), and semantic (cosine similarity &gt; 0.8 on alert description embeddings). Groups with confidence &gt; 0.7 are auto-promoted to incidents. Groups 0.4–0.7 are surfaced to operators for confirmation.</p>
+    <p><strong style="color:var(--accent3)">Step 4 — RCA and suppression.</strong> Within each group, the root cause candidate is selected using a ranking model: earliest timestamp + highest topology depth + historical RCA label weight. The root cause alert becomes the incident title. All other alerts in the group are suppressed — stored as evidence but not paging. The incident is routed to the owning team based on the root cause CI's assignment group in the CMDB.</p>
+  </div>
+
+  <div class="code-block">
+<span class="cc"># Incident correlation pipeline — Python pseudocode</span>
+<span class="ck">class</span> <span class="cf">CorrelationEngine</span>:
+    <span class="ck">def</span> <span class="cf">__init__</span>(self, cmdb: CMDBGraph, window_sec: <span class="cn">int</span> = <span class="cn">300</span>):
+        self.cmdb = cmdb
+        self.window = window_sec
+        self.open_groups: <span class="cf">dict</span>[str, IncidentGroup] = {}
+
+    <span class="ck">def</span> <span class="cf">process_event</span>(self, event: NormalizedEvent):
+        event = self.<span class="cf">deduplicate</span>(event)
+        <span class="ck">if</span> event <span class="ck">is</span> <span class="cn">None</span>:
+            <span class="ck">return</span> <span class="cc"># duplicate — skip</span>
+
+        candidates = self.<span class="cf">find_candidate_groups</span>(event)
+        best_group, score = self.<span class="cf">score_candidates</span>(event, candidates)
+
+        <span class="ck">if</span> score &gt;= <span class="cn">0.7</span>:
+            best_group.<span class="cf">add_child</span>(event)
+            <span class="cf">suppress_alert</span>(event, parent=best_group.root)
+        <span class="ck">elif</span> score &gt;= <span class="cn">0.4</span>:
+            <span class="cf">suggest_to_operator</span>(event, candidate_group=best_group)
+        <span class="ck">else</span>:
+            new_group = <span class="cf">IncidentGroup</span>(root=event)
+            <span class="cf">create_incident</span>(new_group)
+            self.open_groups[event.ci_id] = new_group
+
+    <span class="ck">def</span> <span class="cf">score_candidates</span>(self, event, candidates):
+        best, best_score = <span class="cn">None</span>, <span class="cn">0.0</span>
+        <span class="ck">for</span> group <span class="ck">in</span> candidates:
+            t_score = <span class="cf">temporal_score</span>(event, group, self.window)
+            topo_score = self.cmdb.<span class="cf">dependency_score</span>(event.ci_id, group.root.ci_id)
+            sem_score = <span class="cf">semantic_similarity</span>(event.description, group.root.description)
+            score = <span class="cn">0.4</span>*t_score + <span class="cn">0.35</span>*topo_score + <span class="cn">0.25</span>*sem_score
+            <span class="ck">if</span> score &gt; best_score:
+                best, best_score = group, score
+        <span class="ck">return</span> best, best_score
+  </div>
+</div>
+
+<footer>
+  <span>Kuldeep Rao</span> &nbsp;·&nbsp; Incident Correlation
+</footer>
+
+<script>
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.section').forEach(s => observer.observe(s));
+
+function switchTab(id, btn) {
+  const section = btn.closest('.section');
+  section.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  section.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+
+const approachDetails = {
+  rule: {
+    title: 'Rule-Based Correlation',
+    body: `Predefined rules correlate alerts based on time windows, source topology, and alert type patterns. Example: "group all alerts from the same host within 5 minutes."<br><br>
+    <strong style="color:var(--text)">How it works:</strong> Alert A fires, a time window opens. Any alert matching the rule's topology condition is grouped under A.<br><br>
+    <strong style="color:var(--text)">Accuracy:</strong> High for known patterns, 0% for unknown patterns. Brittle — breaks on infrastructure changes.<br><br>
+    <strong style="color:var(--text)">Best for:</strong> Well-understood, stable environments. Starting point for any correlation system.`
+  },
+  stat: {
+    title: 'Statistical Correlation',
+    body: `Uses similarity metrics and clustering algorithms (DBSCAN, hierarchical clustering) to group events by similarity without predefined rules. Groups emerge from the data.<br><br>
+    <strong style="color:var(--text)">How it works:</strong> Compute pairwise similarity between events using TF-IDF or embedding cosine similarity. Run DBSCAN to find dense clusters. Each cluster becomes a candidate incident group.<br><br>
+    <strong style="color:var(--text)">Accuracy:</strong> Better than rules for novel patterns. Sensitive to hyperparameter tuning (epsilon, min_samples).<br><br>
+    <strong style="color:var(--text)">Best for:</strong> Environments with unknown alert patterns, during post-migration periods when rule sets are outdated.`
+  },
+  ml: {
+    title: 'ML-Based Correlation',
+    body: `Trains a model on labeled historical incidents to predict whether two alerts belong to the same incident. Features: temporal distance, topology distance, semantic similarity, historical co-occurrence frequency.<br><br>
+    <strong style="color:var(--text)">How it works:</strong> Train a binary classifier on (alert_A, alert_B) pairs labeled by operators as "same incident" or "different incident." At inference time, score all alert pairs within the time window.<br><br>
+    <strong style="color:var(--text)">Accuracy:</strong> 80–92% precision at 70–85% recall with sufficient training data (10k+ labeled pairs).<br><br>
+    <strong style="color:var(--text)">Best for:</strong> Organizations with mature incident data and operator labeling workflows.`
+  },
+  llm: {
+    title: 'LLM-Based Semantic Correlation',
+    body: `Large language models understand the semantic meaning of alert descriptions. Two alerts with different surface text but the same underlying meaning (e.g., "DB unavailable" vs "connection pool exhausted") are correctly grouped.<br><br>
+    <strong style="color:var(--text)">How it works:</strong> Embed all alerts using a text embedding model. Compute cosine similarity. Cluster by similarity threshold. Optionally, use an LLM to generate a natural language summary and probable root cause for each cluster.<br><br>
+    <strong style="color:var(--text)">Accuracy:</strong> Highest semantic precision, especially for natural language alerts from log-based alerting.<br><br>
+    <strong style="color:var(--text)">Best for:</strong> High-volume environments with diverse alert text, or when operator-readable incident summaries are required.`
+  }
+};
+
+function selectApproach(key, card) {
+  document.querySelectorAll('.approach-card').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+  const detail = document.getElementById('approach-detail');
+  const content = document.getElementById('approach-detail-content');
+  const d = approachDetails[key];
+  content.innerHTML = `<strong style="color:var(--accent3)">${d.title}</strong><br><span style="font-size:13px;color:var(--muted)">${d.body}</span>`;
+  detail.classList.add('visible');
+}
+</script>
+</body>
+</html>

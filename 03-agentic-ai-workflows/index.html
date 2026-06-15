@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic AI Workflows — End-to-End Guide</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+:root{--bg:#0f1117;--bg2:#161b27;--bg3:#1e2535;--border:rgba(255,255,255,0.08);--text:#e2e8f0;--muted:#8892a4;--accent:#6366f1;--accent2:#22d3ee;--accent3:#f59e0b;--green:#10b981;--red:#f43f5e;--purple:#a78bfa;--font:'Inter',sans-serif;--mono:'JetBrains Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.7;overflow-x:hidden}
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4rem 2rem;position:relative;overflow:hidden}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(99,102,241,0.07) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,0.07) 1px,transparent 1px);background-size:48px 48px;mask-image:radial-gradient(ellipse at center,black 30%,transparent 80%)}
+.hero-glow{position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(99,102,241,0.12) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);border-radius:100px;padding:6px 16px;font-size:12px;font-weight:500;color:#a5b4fc;margin-bottom:2rem;letter-spacing:0.05em;text-transform:uppercase}
+.hero h1{font-size:clamp(2.5rem,6vw,4.5rem);font-weight:600;letter-spacing:-0.03em;line-height:1.1;margin-bottom:1.5rem;position:relative}
+.hero h1 span{background:linear-gradient(135deg,#6366f1,#22d3ee);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero p{font-size:1.15rem;color:var(--muted);max-width:600px;margin-bottom:3rem;position:relative}
+.hero-stats{display:flex;gap:3rem;position:relative;flex-wrap:wrap;justify-content:center}
+.stat{text-align:center}.stat-num{font-size:2rem;font-weight:600;color:var(--accent2);font-family:var(--mono)}.stat-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em}
+.scroll-hint{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);color:var(--muted);font-size:12px;display:flex;flex-direction:column;align-items:center;gap:8px;animation:bounce 2s ease-in-out infinite}
+@keyframes bounce{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(8px)}}
+.section{max-width:960px;margin:0 auto;padding:5rem 2rem;opacity:0;transform:translateY(30px);transition:opacity 0.6s ease,transform 0.6s ease}
+.section.visible{opacity:1;transform:translateY(0)}
+.section-label{font-size:11px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:0.75rem}
+.section h2{font-size:clamp(1.6rem,3vw,2.2rem);font-weight:600;letter-spacing:-0.02em;margin-bottom:1rem;line-height:1.2}
+.section-intro{color:var(--muted);font-size:1.05rem;max-width:700px;margin-bottom:3rem}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1.5rem;transition:border-color 0.2s,transform 0.2s}
+.card:hover{border-color:rgba(99,102,241,0.3);transform:translateY(-2px)}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem}
+.card-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:1rem}
+.card h3{font-size:1rem;font-weight:600;margin-bottom:0.5rem}.card p{font-size:13px;color:var(--muted);line-height:1.6}
+.tag{display:inline-block;font-size:11px;font-weight:500;padding:3px 10px;border-radius:100px;margin-top:0.75rem}
+.tab-controls{display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1.5rem;border-bottom:1px solid var(--border);padding-bottom:1rem}
+.tab-btn{padding:8px 18px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--muted);font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.2s}
+.tab-btn.active{background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.3);color:#a5b4fc}
+.tab-btn:hover:not(.active){color:var(--text)}
+.tab-panel{display:none;animation:fadeIn 0.3s ease}.tab-panel.active{display:block}
+.flow{display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin:1.5rem 0}
+.flow-node{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.6rem 1rem;font-size:12px;font-weight:500;text-align:center;min-width:90px;line-height:1.4}
+.flow-arrow{color:var(--muted);font-size:16px;flex-shrink:0}
+.flow-node.hi{background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.4);color:#a5b4fc}
+.scale-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:1.5rem}
+.scale-table th{text-align:left;padding:10px 16px;background:var(--bg3);color:var(--muted);font-weight:500;font-size:11px;letter-spacing:0.08em;text-transform:uppercase}
+.scale-table th:first-child{border-radius:8px 0 0 8px}.scale-table th:last-child{border-radius:0 8px 8px 0}
+.scale-table td{padding:12px 16px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.6}
+.scale-table tr:last-child td{border-bottom:none}.scale-table tr:hover td{background:rgba(255,255,255,0.02)}
+.answer-box{background:linear-gradient(135deg,rgba(99,102,241,0.08),rgba(34,211,238,0.05));border:1px solid rgba(99,102,241,0.25);border-radius:16px;padding:2rem;margin-top:2rem}
+.answer-box p{font-size:14px;color:var(--muted);line-height:1.9}.answer-box p+p{margin-top:0.75rem}
+.code-block{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:1.25rem 1.5rem;font-family:var(--mono);font-size:12px;line-height:1.8;overflow-x:auto;margin-top:1rem}
+.cc{color:#6b7280}.ck{color:#a78bfa}.cs{color:#34d399}.cf{color:#60a5fa}.cn{color:#f59e0b}
+.badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:500}
+.divider{width:100%;height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:2rem 0}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:3px}
+/* step cards */
+.step-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;margin-bottom:0.75rem;overflow:hidden;transition:border-color 0.2s}
+.step-card.active-step{border-color:rgba(99,102,241,0.4)}
+.step-header{display:flex;align-items:center;gap:1rem;padding:1rem 1.25rem;cursor:pointer;user-select:none}
+.step-num{width:32px;height:32px;border-radius:50%;background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#a5b4fc;flex-shrink:0}
+.step-title{font-weight:600;font-size:14px;flex:1}
+.step-toggle{color:var(--muted);font-size:18px;transition:transform 0.2s;font-weight:300}
+.step-card.active-step .step-toggle{transform:rotate(45deg)}
+.step-body{display:none;padding:0 1.25rem 1.25rem;font-size:13px;color:var(--muted);line-height:1.8;border-top:1px solid var(--border)}
+.step-card.active-step .step-body{display:block}
+/* failure cards */
+.fail-card{background:var(--bg2);border:1px solid rgba(244,63,94,0.2);border-radius:14px;padding:1.25rem}
+.fail-card h4{font-size:14px;font-weight:600;margin-bottom:0.5rem}
+.fail-card p{font-size:12px;color:var(--muted);line-height:1.6}
+.fail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem}
+/* pattern flow */
+.pattern-box{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-top:1rem}
+.pattern-box h4{font-size:13px;font-weight:600;color:var(--accent2);margin-bottom:0.75rem}
+footer{text-align:center;padding:3rem 2rem;color:var(--muted);font-size:13px;border-top:1px solid var(--border)}
+footer span{color:var(--accent);font-weight:500}
+@media(max-width:640px){.hero-stats{gap:1.5rem}.flow{flex-direction:column}.flow-arrow{transform:rotate(90deg)}.tab-btn{padding:6px 12px;font-size:12px}}
+@media(prefers-reduced-motion:reduce){*,.section{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-badge">Agents · LLMs · Orchestration · Production</div>
+  <h1>Agentic AI<br><span>Workflows</span></h1>
+  <p>End-to-End Guide — from single LLM calls to production multi-agent systems that loop, remember, and act.</p>
+  <div class="hero-stats">
+    <div class="stat"><div class="stat-num">4</div><div class="stat-label">Patterns</div></div>
+    <div class="stat"><div class="stat-num">3</div><div class="stat-label">Memory Types</div></div>
+    <div class="stat"><div class="stat-num">6</div><div class="stat-label">Failure Modes</div></div>
+    <div class="stat"><div class="stat-num">∞</div><div class="stat-label">Loops</div></div>
+  </div>
+  <div class="scroll-hint"><span>scroll</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg></div>
+</section>
+
+<!-- Section 1: Foundation -->
+<div class="section">
+  <div class="section-label">01 — Foundation</div>
+  <h2>What is an AI agent vs a plain LLM call?</h2>
+  <p class="section-intro">An LLM responds. An agent acts. The difference is a loop, tools, and memory — turning a single prediction into a goal-directed system.</p>
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-icon" style="background:rgba(99,102,241,0.15)">🧠</div>
+      <h3>LLM Call</h3>
+      <p>Single prompt → single response. No state, no tools, no follow-up. Stateless by design. Great for classification, summarization, and generation tasks that fit in one turn.</p>
+      <span class="tag" style="background:rgba(99,102,241,0.15);color:#a5b4fc">Stateless · One-shot</span>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(34,211,238,0.1)">🤖</div>
+      <h3>Agent</h3>
+      <p>Loop + tools + memory. The LLM reasons about what action to take, executes a tool, observes the result, and loops until the goal is reached or a stopping condition fires.</p>
+      <span class="tag" style="background:rgba(34,211,238,0.1);color:#22d3ee">Loop · Tools · Memory</span>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(167,139,250,0.1)">🕸️</div>
+      <h3>Multi-Agent</h3>
+      <p>Multiple specialized agents coordinate toward a shared goal. One orchestrator delegates subtasks to worker agents, aggregates results, and handles failures across the network.</p>
+      <span class="tag" style="background:rgba(167,139,250,0.1);color:#a78bfa">Coordination · Delegation</span>
+    </div>
+  </div>
+</div>
+
+<!-- Section 2: ReAct Loop -->
+<div class="section">
+  <div class="section-label">02 — The Agent Loop</div>
+  <h2>The ReAct loop — think, act, observe, repeat</h2>
+  <p class="section-intro">ReAct (Reasoning + Acting) is the dominant agentic pattern. The LLM alternates between thinking about what to do and actually doing it. Click each step to expand.</p>
+
+  <div id="react-steps">
+    <div class="step-card active-step" onclick="toggleStep(this)">
+      <div class="step-header">
+        <div class="step-num">1</div>
+        <div class="step-title">Thought — Reason about the goal and current state</div>
+        <div class="step-toggle">+</div>
+      </div>
+      <div class="step-body">
+        <p style="padding-top:1rem">The LLM receives the user's goal plus all previous observations and produces a scratchpad thought. It reasons: <em>"I need to look up the ticket count. I should call the search_tickets tool with status=open."</em><br><br>
+        This step is internal — the user never sees it. It gives the model space to plan before committing to an action. Longer reasoning here reduces hallucinated tool calls.</p>
+      </div>
+    </div>
+    <div class="step-card" onclick="toggleStep(this)">
+      <div class="step-header">
+        <div class="step-num">2</div>
+        <div class="step-title">Action — Select and invoke a tool</div>
+        <div class="step-toggle">+</div>
+      </div>
+      <div class="step-body">
+        <p style="padding-top:1rem">The LLM outputs a structured action: which tool to call and with what arguments. The orchestrator parses this and dispatches the tool call. Tools can be API calls, code execution, database queries, web search, or any deterministic function with a clear schema.<br><br>
+        The model cannot take multiple simultaneous actions in a single step — parallelism requires architectural support (fan-out patterns).</p>
+      </div>
+    </div>
+    <div class="step-card" onclick="toggleStep(this)">
+      <div class="step-header">
+        <div class="step-num">3</div>
+        <div class="step-title">Observation — Receive and parse tool result</div>
+        <div class="step-toggle">+</div>
+      </div>
+      <div class="step-body">
+        <p style="padding-top:1rem">The tool result is injected back into the context window as an observation. The LLM now has new information to reason with. Raw tool outputs should be summarized or truncated before injection to avoid context overflow.<br><br>
+        Error messages from tools are also observations — the agent can retry with corrected parameters or decide the task is infeasible.</p>
+      </div>
+    </div>
+    <div class="step-card" onclick="toggleStep(this)">
+      <div class="step-header">
+        <div class="step-num">4</div>
+        <div class="step-title">Loop termination — When does the agent stop?</div>
+        <div class="step-toggle">+</div>
+      </div>
+      <div class="step-body">
+        <p style="padding-top:1rem">Three stopping conditions:<br><br>
+        <strong style="color:var(--green)">Goal reached</strong> — The LLM produces a final answer with no further tool calls.<br>
+        <strong style="color:var(--accent3)">Max steps exceeded</strong> — A hard cap (e.g., 15 iterations) prevents infinite loops. Return a partial answer.<br>
+        <strong style="color:var(--red)">Unrecoverable error</strong> — Tool consistently fails or returns permission denied. Agent surfaces the error to the user.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow" style="margin-top:2rem">
+    <div class="flow-node hi">User Goal</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node hi">Thought</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node hi">Action</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node hi">Observation</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node" style="color:var(--accent3)">Loop ↩</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node" style="color:var(--green);border-color:rgba(16,185,129,0.3)">Final Answer</div>
+  </div>
+</div>
+
+<!-- Section 3: Memory Types -->
+<div class="section">
+  <div class="section-label">03 — Memory Types</div>
+  <h2>Three kinds of memory in agentic systems — click each</h2>
+  <p class="section-intro">Agents need memory to avoid repeating work and to build on prior context. Each memory type has different latency, cost, and persistence characteristics.</p>
+
+  <div class="tab-controls">
+    <button class="tab-btn active" onclick="switchTab('mem-ctx', this)">In-context Memory</button>
+    <button class="tab-btn" onclick="switchTab('mem-ext', this)">External (Vector DB)</button>
+    <button class="tab-btn" onclick="switchTab('mem-epi', this)">Episodic (Past Sessions)</button>
+  </div>
+
+  <div id="mem-ctx" class="tab-panel active">
+    <div class="card">
+      <h3>In-context Memory</h3>
+      <p style="margin-top:0.5rem;color:var(--muted);font-size:13px">Everything the agent has seen in the current session lives in the context window. This includes the original user goal, all Thought/Action/Observation turns, and any injected documents.</p>
+      <div class="divider"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;font-size:12px">
+        <div><div style="color:var(--accent2);font-weight:600;margin-bottom:4px">Stores</div><div style="color:var(--muted)">Current conversation, tool results, scratch reasoning</div></div>
+        <div><div style="color:var(--accent2);font-weight:600;margin-bottom:4px">When to use</div><div style="color:var(--muted)">Single session tasks, &lt;50 tool turns, fits in context budget</div></div>
+        <div><div style="color:var(--red);font-weight:600;margin-bottom:4px">Limits</div><div style="color:var(--muted)">Token cap (4k–200k), lost when session ends, costly to fill</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="mem-ext" class="tab-panel">
+    <div class="card">
+      <h3>External Memory — Vector Database</h3>
+      <p style="margin-top:0.5rem;color:var(--muted);font-size:13px">Semantic facts are encoded as embeddings and stored in a vector store (Pinecone, Weaviate, pgvector). The agent retrieves relevant chunks via similarity search before reasoning.</p>
+      <div class="divider"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;font-size:12px">
+        <div><div style="color:var(--accent2);font-weight:600;margin-bottom:4px">Stores</div><div style="color:var(--muted)">Domain knowledge, past documents, product data, user preferences</div></div>
+        <div><div style="color:var(--accent2);font-weight:600;margin-bottom:4px">When to use</div><div style="color:var(--muted)">Knowledge base QA, long-running agents, shared multi-session memory</div></div>
+        <div><div style="color:var(--red);font-weight:600;margin-bottom:4px">Limits</div><div style="color:var(--muted)">Retrieval latency adds ~100–500ms per turn; recall ≠ perfect</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="mem-epi" class="tab-panel">
+    <div class="card">
+      <h3>Episodic Memory — Past Sessions</h3>
+      <p style="margin-top:0.5rem;color:var(--muted);font-size:13px">Summaries of past completed agent runs are stored and retrievable. When a new task starts, related past episodes are injected as context — "Last time you asked about X, the agent found Y."</p>
+      <div class="divider"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;font-size:12px">
+        <div><div style="color:var(--accent2);font-weight:600;margin-bottom:4px">Stores</div><div style="color:var(--muted)">Task summaries, user corrections, final answers, failed approaches</div></div>
+        <div><div style="color:var(--accent2);font-weight:600;margin-bottom:4px">When to use</div><div style="color:var(--muted)">Personalized agents, recurring tasks, agents that learn from mistakes</div></div>
+        <div><div style="color:var(--red);font-weight:600;margin-bottom:4px">Limits</div><div style="color:var(--muted)">Stale memory causes outdated advice; summaries lose fidelity</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Section 4: Tool Use -->
+<div class="section">
+  <div class="section-label">04 — Tool Use</div>
+  <h2>How agents use tools</h2>
+  <p class="section-intro">Tools are the only way an agent can affect the world beyond generating text. Every tool has a schema: name, description, and parameter types. The LLM selects tools by matching goal to schema description.</p>
+
+  <div class="flow">
+    <div class="flow-node hi">User Query</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node hi">LLM Reasons</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node hi">Tool Selected</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node hi">Execution</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node hi">Result Injected</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node hi">LLM Responds</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node" style="color:var(--green);border-color:rgba(16,185,129,0.3)">Answer</div>
+  </div>
+
+  <div class="card-grid" style="margin-top:2rem">
+    <div class="card">
+      <div class="card-icon" style="background:rgba(34,211,238,0.1)">🔍</div>
+      <h3>Search Tools</h3>
+      <p>Web search, vector DB retrieval, knowledge graph lookup. Returns unstructured or semi-structured text. Best for open-domain question answering and research tasks.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(99,102,241,0.15)">⚙️</div>
+      <h3>Code Execution</h3>
+      <p>Sandboxed Python/JS REPL. Agent writes and runs code, captures stdout/stderr as observation. Enables data analysis, calculation, and programmatic transformations.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(245,158,11,0.1)">🌐</div>
+      <h3>API Calls</h3>
+      <p>External service integrations: ticketing systems, CRMs, monitoring APIs. Require auth handling, rate limit awareness, and structured error responses that the agent can reason about.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(16,185,129,0.1)">🗄️</div>
+      <h3>Database Queries</h3>
+      <p>SQL or NoSQL queries via a tool wrapper. The LLM generates queries from natural language. Requires schema context in the system prompt to avoid hallucinated table/column names.</p>
+    </div>
+  </div>
+
+  <div class="code-block" style="margin-top:2rem">
+<span class="cc"># Tool definition schema (OpenAI function-calling format)</span>
+<span class="ck">tools</span> = [
+  {
+    <span class="cs">"type"</span>: <span class="cs">"function"</span>,
+    <span class="cs">"function"</span>: {
+      <span class="cs">"name"</span>: <span class="cs">"search_tickets"</span>,
+      <span class="cs">"description"</span>: <span class="cs">"Search open IT tickets by keyword and status"</span>,
+      <span class="cs">"parameters"</span>: {
+        <span class="cs">"type"</span>: <span class="cs">"object"</span>,
+        <span class="cs">"properties"</span>: {
+          <span class="cs">"query"</span>: {<span class="cs">"type"</span>: <span class="cs">"string"</span>, <span class="cs">"description"</span>: <span class="cs">"search term"</span>},
+          <span class="cs">"status"</span>: {<span class="cs">"type"</span>: <span class="cs">"string"</span>, <span class="cs">"enum"</span>: [<span class="cs">"open"</span>, <span class="cs">"closed"</span>, <span class="cs">"all"</span>]}
+        },
+        <span class="cs">"required"</span>: [<span class="cs">"query"</span>]
+      }
+    }
+  }
+]
+  </div>
+</div>
+
+<!-- Section 5: Orchestration Patterns -->
+<div class="section">
+  <div class="section-label">05 — Orchestration Patterns</div>
+  <h2>Multi-agent coordination patterns — click each</h2>
+  <p class="section-intro">Once a task exceeds a single agent's capability, coordination is needed. Each pattern has different latency, error propagation, and cost characteristics.</p>
+
+  <div class="tab-controls">
+    <button class="tab-btn active" onclick="switchTab('pat-seq', this)">Sequential</button>
+    <button class="tab-btn" onclick="switchTab('pat-par', this)">Parallel</button>
+    <button class="tab-btn" onclick="switchTab('pat-sup', this)">Supervisor/Worker</button>
+    <button class="tab-btn" onclick="switchTab('pat-deb', this)">Debate</button>
+  </div>
+
+  <div id="pat-seq" class="tab-panel active">
+    <div class="pattern-box">
+      <h4>Sequential Pipeline</h4>
+      <div class="flow">
+        <div class="flow-node hi">Agent A<br><small>Research</small></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node hi">Agent B<br><small>Summarize</small></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node hi">Agent C<br><small>Format</small></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node" style="color:var(--green);border-color:rgba(16,185,129,0.3)">Output</div>
+      </div>
+      <p style="font-size:13px;color:var(--muted);margin-top:1rem">Each agent's output becomes the next agent's input. Simple, predictable, easy to debug. Error propagation is a risk — a bad output from Agent A corrupts all downstream agents.<br><br><strong style="color:var(--text)">Use when:</strong> tasks have a natural ordered pipeline, early stages produce deterministic output, latency is not critical.</p>
+    </div>
+  </div>
+
+  <div id="pat-par" class="tab-panel">
+    <div class="pattern-box">
+      <h4>Parallel Fan-out</h4>
+      <div class="flow">
+        <div class="flow-node hi">Orchestrator</div>
+        <div class="flow-arrow">→</div>
+        <div style="display:flex;flex-direction:column;gap:0.5rem">
+          <div class="flow-node">Agent A</div>
+          <div class="flow-node">Agent B</div>
+          <div class="flow-node">Agent C</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node hi">Aggregator</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node" style="color:var(--green);border-color:rgba(16,185,129,0.3)">Output</div>
+      </div>
+      <p style="font-size:13px;color:var(--muted);margin-top:1rem">Multiple agents run simultaneously on independent subtasks. Latency is bounded by the slowest agent, not the sum. Cost is higher but wall-clock time improves significantly.<br><br><strong style="color:var(--text)">Use when:</strong> subtasks are independent, speed matters more than cost, tasks are easily decomposable (e.g., analyze 5 regions simultaneously).</p>
+    </div>
+  </div>
+
+  <div id="pat-sup" class="tab-panel">
+    <div class="pattern-box">
+      <h4>Supervisor / Worker</h4>
+      <div class="flow">
+        <div class="flow-node hi">Supervisor LLM<br><small>Plans & decides</small></div>
+        <div class="flow-arrow">↔</div>
+        <div style="display:flex;flex-direction:column;gap:0.5rem">
+          <div class="flow-node">Worker: Research</div>
+          <div class="flow-node">Worker: Code</div>
+          <div class="flow-node">Worker: Write</div>
+        </div>
+      </div>
+      <p style="font-size:13px;color:var(--muted);margin-top:1rem">A supervisor LLM dynamically decides which worker to invoke, reviews results, and can retry or reassign tasks. Workers are specialized agents with narrow tool sets and focused system prompts.<br><br><strong style="color:var(--text)">Use when:</strong> tasks are complex and non-linear, the supervisor needs to adapt the plan based on intermediate results, workers have domain-specific capabilities.</p>
+    </div>
+  </div>
+
+  <div id="pat-deb" class="tab-panel">
+    <div class="pattern-box">
+      <h4>Debate Pattern</h4>
+      <div class="flow">
+        <div class="flow-node hi">Agent A<br><small>Proposes answer</small></div>
+        <div class="flow-arrow">↔</div>
+        <div class="flow-node hi">Agent B<br><small>Critiques</small></div>
+        <div class="flow-arrow">↔</div>
+        <div class="flow-node hi">Agent A<br><small>Refines</small></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node hi">Judge LLM</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node" style="color:var(--green);border-color:rgba(16,185,129,0.3)">Final</div>
+      </div>
+      <p style="font-size:13px;color:var(--muted);margin-top:1rem">Multiple agents propose answers; others critique. A judge selects or synthesizes the best response. Reduces hallucination and catches errors that a single agent would miss.<br><br><strong style="color:var(--text)">Use when:</strong> accuracy is critical, the task is ambiguous or high-stakes (legal, medical, financial), self-consistency checks are needed. Expensive — 3–5× token cost.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Section 6: Production Failures -->
+<div class="section">
+  <div class="section-label">06 — Production Failures</div>
+  <h2>6 ways agentic systems fail in production</h2>
+  <p class="section-intro">Agents introduce failure modes that don't exist in simple LLM calls. Every production deployment must anticipate and handle these.</p>
+
+  <div class="fail-grid">
+    <div class="fail-card">
+      <span class="badge" style="background:rgba(244,63,94,0.15);color:#f43f5e;margin-bottom:0.75rem">Critical</span>
+      <h4>Infinite Loops</h4>
+      <p>Agent retries a failing tool indefinitely or oscillates between two states. <strong style="color:var(--text)">Prevent:</strong> hard step limit (≤20), detect repeated identical actions, exponential backoff on tool errors.</p>
+    </div>
+    <div class="fail-card">
+      <span class="badge" style="background:rgba(244,63,94,0.15);color:#f43f5e;margin-bottom:0.75rem">Critical</span>
+      <h4>Cost Explosion</h4>
+      <p>Runaway token consumption from long loops or large context injection. <strong style="color:var(--text)">Prevent:</strong> per-run token budget, cost alerting at 80% threshold, context compression after N turns.</p>
+    </div>
+    <div class="fail-card">
+      <span class="badge" style="background:rgba(245,158,11,0.15);color:#f59e0b;margin-bottom:0.75rem">High</span>
+      <h4>Tool Hallucination</h4>
+      <p>Agent calls a tool with invented parameter values or invents a tool name that doesn't exist. <strong style="color:var(--text)">Prevent:</strong> strict JSON schema validation, reject calls to undefined tools, log all tool invocations.</p>
+    </div>
+    <div class="fail-card">
+      <span class="badge" style="background:rgba(245,158,11,0.15);color:#f59e0b;margin-bottom:0.75rem">High</span>
+      <h4>Context Overflow</h4>
+      <p>Accumulated tool outputs exceed the context window. <strong style="color:var(--text)">Prevent:</strong> summarize observations &gt;2k tokens, rolling window compression, external memory offload after N turns.</p>
+    </div>
+    <div class="fail-card">
+      <span class="badge" style="background:rgba(245,158,11,0.15);color:#f59e0b;margin-bottom:0.75rem">High</span>
+      <h4>Race Conditions</h4>
+      <p>Two agents write to the same resource simultaneously in a multi-agent system. <strong style="color:var(--text)">Prevent:</strong> resource locking, optimistic concurrency with version checks, immutable shared state.</p>
+    </div>
+    <div class="fail-card">
+      <span class="badge" style="background:rgba(99,102,241,0.15);color:#a5b4fc;margin-bottom:0.75rem">Medium</span>
+      <h4>Non-deterministic Outputs</h4>
+      <p>Same input produces different tool call sequences across runs due to LLM sampling. <strong style="color:var(--text)">Prevent:</strong> temperature=0 for tool selection, seed the model where supported, log full traces.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Section 7: Scale Table -->
+<div class="section">
+  <div class="section-label">07 — Scale & Cost</div>
+  <h2>Operating agents at scale</h2>
+  <p class="section-intro">Agent complexity, cost, and monitoring requirements change dramatically with scale. Use this as a design checklist.</p>
+
+  <table class="scale-table">
+    <thead>
+      <tr>
+        <th>Scale</th>
+        <th>Agent Complexity</th>
+        <th>Tool Count</th>
+        <th>Cost / Run</th>
+        <th>Monitoring Approach</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="badge" style="background:rgba(16,185,129,0.15);color:#10b981">Small</span><br><small style="color:var(--muted)">&lt;100 runs/day</small></td>
+        <td>Single agent, 3–5 tools, simple ReAct loop</td>
+        <td>2–5</td>
+        <td>$0.01–$0.10</td>
+        <td>Application logs, manual review of traces</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:rgba(245,158,11,0.15);color:#f59e0b">Medium</span><br><small style="color:var(--muted)">1k–10k/day</small></td>
+        <td>Supervisor + 2–3 workers, external memory, retry logic</td>
+        <td>5–15</td>
+        <td>$0.05–$0.50</td>
+        <td>Structured trace logging, cost dashboards, p95 latency alerts</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:rgba(244,63,94,0.15);color:#f43f5e">Large</span><br><small style="color:var(--muted)">10k–100k/day</small></td>
+        <td>Multi-agent graph, episodic memory, circuit breakers</td>
+        <td>15–30</td>
+        <td>$0.10–$2.00</td>
+        <td>LLMOps platform (LangSmith, Weights &amp; Biases), per-agent cost tracking</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:rgba(167,139,250,0.15);color:#a78bfa">Massive</span><br><small style="color:var(--muted)">&gt;100k/day</small></td>
+        <td>Distributed multi-agent, async queues, model routing</td>
+        <td>30+</td>
+        <td>$0.50–$10.00</td>
+        <td>Full observability stack, budget enforcement, abuse detection, auto-scaling</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Section 8: End-to-end Guide -->
+<div class="section">
+  <div class="section-label">08 — End-to-End Guide</div>
+  <h2>Complete agent system walkthrough</h2>
+  <p class="section-intro">Putting it all together — from receiving a user goal to returning a grounded, tool-backed answer with full observability.</p>
+
+  <div class="answer-box">
+    <p><strong style="color:var(--accent2)">Step 1 — Goal intake.</strong> Receive the user's natural language goal. Classify intent, check if it requires tools or can be answered directly. If tool use is needed, initialize the agent loop with a system prompt that includes tool schemas, memory context, and a step budget.</p>
+    <p><strong style="color:var(--accent2)">Step 2 — Memory retrieval.</strong> Query the vector store for relevant past episodes or knowledge chunks. Inject top-K results into the context window before the first Thought step. This grounds the agent in domain knowledge before it begins reasoning.</p>
+    <p><strong style="color:var(--accent2)">Step 3 — ReAct execution.</strong> Run the Thought → Action → Observation loop. After each observation, compress results that exceed 1000 tokens. Increment the step counter. On each action, validate the tool schema before dispatching. Log everything with a trace ID.</p>
+    <p><strong style="color:var(--accent2)">Step 4 — Output and storage.</strong> When the agent produces a final answer (no further tool calls), validate it passes a confidence threshold. Write the episode summary to episodic memory. Return the answer to the user with citations from tool results.</p>
+  </div>
+
+  <div class="code-block">
+<span class="cc"># Python pseudocode — production agent loop</span>
+<span class="ck">def</span> <span class="cf">run_agent</span>(goal: <span class="cs">str</span>, max_steps: <span class="cn">int</span> = <span class="cn">15</span>) -> <span class="cs">str</span>:
+    memory = <span class="cf">retrieve_memory</span>(goal)              <span class="cc"># vector DB lookup</span>
+    messages = <span class="cf">build_initial_context</span>(goal, memory)
+    step, cost = <span class="cn">0</span>, <span class="cn">0.0</span>
+
+    <span class="ck">while</span> step &lt; max_steps:
+        response = <span class="cf">llm_call</span>(messages, tools=TOOL_SCHEMAS)
+        cost += <span class="cf">estimate_cost</span>(response)
+
+        <span class="ck">if</span> cost &gt; BUDGET_LIMIT:
+            <span class="ck">raise</span> <span class="cf">BudgetExceeded</span>(cost)
+
+        <span class="ck">if</span> response.finish_reason == <span class="cs">"stop"</span>:
+            <span class="cf">save_episode</span>(goal, response.content)
+            <span class="ck">return</span> response.content       <span class="cc"># final answer</span>
+
+        tool_call = response.tool_calls[<span class="cn">0</span>]
+        result = <span class="cf">execute_tool</span>(tool_call.name, tool_call.args)
+        result = <span class="cf">truncate_if_large</span>(result, max_tokens=<span class="cn">1000</span>)
+
+        messages.<span class="cf">append</span>({<span class="cs">"role"</span>: <span class="cs">"tool"</span>, <span class="cs">"content"</span>: result})
+        step += <span class="cn">1</span>
+
+    <span class="ck">return</span> <span class="cs">"Max steps reached — partial answer: "</span> + <span class="cf">summarize</span>(messages)
+  </div>
+</div>
+
+<footer>
+  <span>Kuldeep Rao</span> &nbsp;·&nbsp; Agentic AI Workflows
+</footer>
+
+<script>
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.section').forEach(s => observer.observe(s));
+
+function switchTab(id, btn) {
+  const parent = btn.closest('.section') || document;
+  parent.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  parent.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+
+function toggleStep(card) {
+  const isActive = card.classList.contains('active-step');
+  document.querySelectorAll('.step-card').forEach(c => c.classList.remove('active-step'));
+  if (!isActive) card.classList.add('active-step');
+}
+</script>
+</body>
+</html>
