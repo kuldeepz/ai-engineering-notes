@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Incident Correlation — AIOps End-to-End Guide</title>
+<title>AIOps &amp; Alert Management — End-to-End Guide</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 :root{--bg:#0f1117;--bg2:#161b27;--bg3:#1e2535;--border:rgba(255,255,255,0.08);--text:#e2e8f0;--muted:#8892a4;--accent:#6366f1;--accent2:#22d3ee;--accent3:#f59e0b;--green:#10b981;--red:#f43f5e;--purple:#a78bfa;--font:'Inter',sans-serif;--mono:'JetBrains Mono',monospace}
@@ -99,9 +99,9 @@ footer span{color:var(--accent3);font-weight:500}
 <section class="hero">
   <div class="hero-grid"></div>
   <div class="hero-glow"></div>
-  <div class="hero-badge">AIOps · ITSM · Correlation · Event Management</div>
+  <div class="hero-badge">AIOps · Alert Management · Noise Reduction · Event Grouping</div>
   <h1>Incident<br><span>Correlation</span></h1>
-  <p>AIOps End-to-End Guide — transform thousands of raw alerts into a handful of actionable incidents with ML-powered correlation.</p>
+  <p>How AI reduces alert noise, groups related events, and surfaces actionable incidents — from raw event stream to root cause.</p>
   <div class="hero-stats">
     <div class="stat"><div class="stat-num">3</div><div class="stat-label">Correlation Methods</div></div>
     <div class="stat"><div class="stat-num">10×</div><div class="stat-label">Noise Reduction</div></div>
@@ -491,7 +491,7 @@ footer span{color:var(--accent3);font-weight:500}
 <div class="section">
   <div class="section-label">08 — End-to-End Solution</div>
   <h2>Complete correlation system walkthrough</h2>
-  <p class="section-intro">From raw event stream to correlated incident with root cause — a production-grade AIOps correlation pipeline.</p>
+  <p class="section-intro">From raw event stream to correlated incident with root cause — a production-grade AIOps alert management pipeline.</p>
 
   <div class="answer-box">
     <p><strong style="color:var(--accent3)">Step 1 — Event normalization.</strong> All monitoring tools publish events to a Kafka topic. A normalization consumer reads from the topic, enriches each event with CMDB CI data (host → CI_id, service tier, owner team), and writes the normalized event to the correlation engine state store. Any event missing a CMDB entry is flagged as "unknown CI" and treated independently.</p>
@@ -540,7 +540,7 @@ footer span{color:var(--accent3);font-weight:500}
 </div>
 
 <footer>
-  <span>Kuldeep Rao</span> &nbsp;·&nbsp; Incident Correlation
+  <span>Kuldeep Rao</span> &nbsp;·&nbsp; AIOps &amp; Alert Management
 </footer>
 
 <script>
