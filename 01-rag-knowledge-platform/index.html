@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAG Complete Guide — Enterprise ITSM</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0f1117;
+    --bg2: #161b27;
+    --bg3: #1e2535;
+    --border: rgba(255,255,255,0.08);
+    --text: #e2e8f0;
+    --muted: #8892a4;
+    --accent: #6366f1;
+    --accent2: #22d3ee;
+    --accent3: #f59e0b;
+    --green: #10b981;
+    --red: #f43f5e;
+    --purple: #a78bfa;
+    --font: 'Inter', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* Hero */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 4rem 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(99,102,241,0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99,102,241,0.07) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+  }
+
+  .hero-glow {
+    position: absolute;
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(99,102,241,0.15);
+    border: 1px solid rgba(99,102,241,0.3);
+    border-radius: 100px;
+    padding: 6px 16px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #a5b4fc;
+    margin-bottom: 2rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .hero h1 {
+    font-size: clamp(2.5rem, 6vw, 4.5rem);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    margin-bottom: 1.5rem;
+    position: relative;
+  }
+
+  .hero h1 span {
+    background: linear-gradient(135deg, #6366f1, #22d3ee);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero p {
+    font-size: 1.15rem;
+    color: var(--muted);
+    max-width: 580px;
+    margin-bottom: 3rem;
+    position: relative;
+  }
+
+  .hero-stats {
+    display: flex;
+    gap: 3rem;
+    position: relative;
+  }
+
+  .stat { text-align: center; }
+  .stat-num { font-size: 2rem; font-weight: 600; color: var(--accent2); font-family: var(--mono); }
+  .stat-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+
+  .scroll-hint {
+    position: absolute;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--muted);
+    font-size: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    animation: bounce 2s ease-in-out infinite;
+  }
+
+  @keyframes bounce { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(8px)} }
+
+  /* Sections */
+  .section {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 5rem 2rem;
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+
+  .section.visible { opacity: 1; transform: translateY(0); }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+  }
+
+  .section h2 {
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 1rem;
+    line-height: 1.2;
+  }
+
+  .section-intro {
+    color: var(--muted);
+    font-size: 1.05rem;
+    max-width: 650px;
+    margin-bottom: 3rem;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+
+  .card:hover {
+    border-color: rgba(99,102,241,0.3);
+    transform: translateY(-2px);
+  }
+
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; }
+
+  .card-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    margin-bottom: 1rem;
+  }
+
+  .card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; }
+  .card p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+  .tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 100px;
+    margin-top: 0.75rem;
+  }
+
+  /* Pipeline */
+  .pipeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    position: relative;
+  }
+
+  .pipeline-row {
+    display: flex;
+    align-items: stretch;
+    gap: 1rem;
+    position: relative;
+  }
+
+  .pipeline-step {
+    flex: 1;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.25rem 1.5rem;
+    position: relative;
+    transition: all 0.3s;
+    cursor: pointer;
+  }
+
+  .pipeline-step:hover {
+    border-color: rgba(99,102,241,0.4);
+    background: var(--bg3);
+  }
+
+  .pipeline-step.active {
+    border-color: var(--accent);
+    background: rgba(99,102,241,0.08);
+  }
+
+  .step-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--accent);
+    margin-bottom: 0.4rem;
+    letter-spacing: 0.1em;
+  }
+
+  .step-title { font-size: 15px; font-weight: 600; margin-bottom: 0.3rem; }
+  .step-sub { font-size: 12px; color: var(--muted); }
+
+  .pipeline-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 32px;
+    color: var(--muted);
+    font-size: 18px;
+  }
+
+  .step-detail {
+    display: none;
+    background: rgba(99,102,241,0.05);
+    border: 1px solid rgba(99,102,241,0.2);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-top: 0.75rem;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  .step-detail.open { display: block; animation: fadeIn 0.3s ease; }
+
+  @keyframes fadeIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+
+  /* Chunking viz */
+  .chunk-demo {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-top: 1.5rem;
+  }
+
+  .chunk-controls {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+  }
+
+  .chunk-btn {
+    padding: 8px 18px;
+    border-radius: 100px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--font);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .chunk-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+
+  .chunk-btn:hover:not(.active) {
+    border-color: var(--accent);
+    color: var(--text);
+  }
+
+  .doc-visual {
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.8;
+    background: var(--bg3);
+    border-radius: 10px;
+    padding: 1.25rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .chunk-block {
+    padding: 4px 8px;
+    border-radius: 6px;
+    margin: 2px 0;
+    transition: all 0.3s;
+    cursor: default;
+  }
+
+  .chunk-info {
+    margin-top: 1rem;
+    padding: 0.75rem 1rem;
+    background: rgba(99,102,241,0.08);
+    border-radius: 10px;
+    font-size: 13px;
+    color: var(--muted);
+    border-left: 3px solid var(--accent);
+  }
+
+  /* Scale section */
+  .scale-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-top: 1.5rem;
+  }
+
+  .scale-table th {
+    text-align: left;
+    padding: 10px 16px;
+    background: var(--bg3);
+    color: var(--muted);
+    font-weight: 500;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .scale-table th:first-child { border-radius: 8px 0 0 8px; }
+  .scale-table th:last-child { border-radius: 0 8px 8px 0; }
+
+  .scale-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    line-height: 1.6;
+  }
+
+  .scale-table tr:last-child td { border-bottom: none; }
+  .scale-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  /* Vector DB comparison */
+  .vdb-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1.5rem; }
+
+  .vdb-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.25rem;
+    transition: all 0.3s;
+    cursor: pointer;
+  }
+
+  .vdb-card:hover { border-color: rgba(99,102,241,0.4); transform: translateY(-3px); }
+  .vdb-card.recommended { border-color: rgba(99,102,241,0.5); background: rgba(99,102,241,0.06); }
+
+  .vdb-name { font-size: 15px; font-weight: 600; margin-bottom: 0.25rem; }
+  .vdb-type { font-size: 11px; color: var(--muted); margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; }
+  .vdb-feat { font-size: 12px; color: var(--muted); line-height: 1.8; }
+
+  .meter {
+    height: 4px;
+    background: var(--bg3);
+    border-radius: 2px;
+    margin: 4px 0 10px;
+    overflow: hidden;
+  }
+
+  .meter-fill { height: 100%; border-radius: 2px; transition: width 0.8s ease; }
+
+  /* Evaluation */
+  .eval-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-top: 1.5rem; }
+
+  .eval-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.25rem;
+  }
+
+  .eval-metric { font-size: 28px; font-weight: 600; font-family: var(--mono); }
+  .eval-name { font-size: 13px; font-weight: 500; margin: 0.4rem 0 0.25rem; }
+  .eval-desc { font-size: 12px; color: var(--muted); line-height: 1.6; }
+
+  /* Interview answer box */
+  .answer-box {
+    background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(34,211,238,0.05));
+    border: 1px solid rgba(99,102,241,0.25);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-top: 2rem;
+    position: relative;
+  }
+
+  .answer-box::before {
+    content: '"';
+    position: absolute;
+    top: -10px;
+    left: 20px;
+    font-size: 60px;
+    color: var(--accent);
+    opacity: 0.3;
+    font-family: Georgia, serif;
+    line-height: 1;
+  }
+
+  .answer-box p { font-size: 14px; color: var(--muted); line-height: 1.9; }
+  .answer-box p + p { margin-top: 0.75rem; }
+
+  .answer-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 1rem;
+  }
+
+  /* Code block */
+  .code-block {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.8;
+    overflow-x: auto;
+    margin-top: 1rem;
+  }
+
+  .code-comment { color: #6b7280; }
+  .code-keyword { color: #a78bfa; }
+  .code-string { color: #34d399; }
+  .code-func { color: #60a5fa; }
+
+  /* Divider */
+  .divider {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
+    margin: 2rem 0;
+  }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .hero-stats { gap: 1.5rem; }
+    .pipeline-row { flex-direction: column; }
+  }
+
+  /* Animations */
+  .pulse { animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+  .float { animation: float 3s ease-in-out infinite; }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+
+  /* Progress bar animation */
+  .animate-bar { animation: growBar 1.5s ease forwards; }
+  @keyframes growBar { from{width:0} }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 3px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, .section { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-badge">
+    <span class="pulse" style="width:6px;height:6px;background:#22d3ee;border-radius:50%;display:inline-block"></span>
+    RAG · Enterprise ITSM · Knowledge Platforms
+  </div>
+  <h1>RAG Knowledge Platform<br><span>End-to-End Guide</span></h1>
+  <p>Retrieval Augmented Generation for Enterprise ITSM — from 1,000 to 50 lakh+ documents. Architecture, chunking strategies, vector databases, and evaluation.</p>
+  <div class="hero-stats">
+    <div class="stat">
+      <div class="stat-num">2</div>
+      <div class="stat-label">Pipelines</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">3</div>
+      <div class="stat-label">Chunk strategies</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">5</div>
+      <div class="stat-label">Vector DBs covered</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">50L+</div>
+      <div class="stat-label">Scale covered</div>
+    </div>
+  </div>
+  <div class="scroll-hint">
+    <span>Scroll to explore</span>
+    <span>↓</span>
+  </div>
+</div>
+
+<!-- WHAT IS RAG -->
+<div class="section" id="s1">
+  <div class="section-label">Foundation</div>
+  <h2>What is RAG and why does it matter?</h2>
+  <p class="section-intro">RAG solves the biggest problem with LLMs in enterprise — they don't know your internal data. RAG gives them access without retraining.</p>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-icon" style="background:rgba(99,102,241,0.15)">🧠</div>
+      <h3>The problem with pure LLMs</h3>
+      <p>GPT-4 knows the world up to its training cutoff. It knows nothing about your internal KB articles, tickets, or SOPs. If you ask it about your company's IT policies, it will hallucinate.</p>
+      <span class="tag" style="background:rgba(244,63,94,0.15);color:#f43f5e">Hallucination risk</span>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(34,211,238,0.15)">🔍</div>
+      <h3>What RAG does</h3>
+      <p>Before answering, RAG retrieves the most relevant documents from your knowledge base. Then passes them to the LLM as context. The LLM answers using real, current, internal data.</p>
+      <span class="tag" style="background:rgba(16,185,129,0.15);color:#10b981">Grounded answers</span>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(245,158,11,0.15)">⚡</div>
+      <h3>Why not fine-tuning?</h3>
+      <p>Fine-tuning bakes knowledge into the model permanently. When your KB articles change, you retrain. RAG updates instantly — add a document, it's searchable in minutes. Much better for ITSM.</p>
+      <span class="tag" style="background:rgba(245,158,11,0.15);color:#f59e0b">Dynamic knowledge</span>
+    </div>
+  </div>
+</div>
+
+<!-- ARCHITECTURE -->
+<div class="section" id="s2">
+  <div class="section-label">Architecture</div>
+  <h2>The two pipelines — click each step</h2>
+  <p class="section-intro">RAG has two distinct flows — ingestion (offline, one time) and query (real time, every request). Click any step to see the detail.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:2rem">
+
+    <!-- Ingestion -->
+    <div>
+      <div style="font-size:12px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent2);margin-bottom:1rem">📥 Ingestion pipeline (offline)</div>
+      <div class="pipeline">
+        <div class="pipeline-step" onclick="toggleStep('i1')">
+          <div class="step-num">STEP 01</div>
+          <div class="step-title">Load documents</div>
+          <div class="step-sub">PDFs, Word, KB articles, wikis</div>
+          <div class="step-detail" id="i1">
+            Load all your source documents. In ITSM this includes KB articles, SOP documents, incident reports, policy docs. Use document loaders — LangChain has 80+ loaders for PDF, DOCX, HTML, Confluence, SharePoint. Extract clean text, preserve metadata (title, date, source URL, category).
+          </div>
+        </div>
+        <div class="pipeline-arrow">↓</div>
+        <div class="pipeline-step" onclick="toggleStep('i2')">
+          <div class="step-num">STEP 02</div>
+          <div class="step-title">Chunk documents</div>
+          <div class="step-sub">Split into meaningful pieces</div>
+          <div class="step-detail" id="i2">
+            Documents are too large to embed whole. Split them into chunks of 256–512 tokens. Strategy matters — see the chunking section below. Always add overlap (10–15%) between chunks so context is not lost at boundaries. Store metadata with each chunk so you can filter later.
+          </div>
+        </div>
+        <div class="pipeline-arrow">↓</div>
+        <div class="pipeline-step" onclick="toggleStep('i3')">
+          <div class="step-num">STEP 03</div>
+          <div class="step-title">Generate embeddings</div>
+          <div class="step-sub">text-embedding-ada / Azure OpenAI</div>
+          <div class="step-detail" id="i3">
+            Convert each chunk to a dense vector (array of numbers) that represents its meaning. We used text-embedding-ada-002 at Ivanti — 1536 dimensions. For large scale (50L+ docs) consider smaller dimension models (256–768) to reduce storage and search cost. Batch your embedding calls — Azure OpenAI allows 2048 chunks per batch.
+          </div>
+        </div>
+        <div class="pipeline-arrow">↓</div>
+        <div class="pipeline-step" onclick="toggleStep('i4')">
+          <div class="step-num">STEP 04</div>
+          <div class="step-title">Store in vector DB</div>
+          <div class="step-sub">Index for similarity search</div>
+          <div class="step-detail" id="i4">
+            Store the embedding + original chunk text + metadata in a vector database. The DB builds a special index (HNSW or FLAT) that makes similarity search fast. For enterprise ITSM we used Azure AI Search — it combines vector search with traditional keyword search (hybrid search) which gives better results than vector-only.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Query -->
+    <div>
+      <div style="font-size:12px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent3);margin-bottom:1rem">🔎 Query pipeline (real time)</div>
+      <div class="pipeline">
+        <div class="pipeline-step" onclick="toggleStep('q1')">
+          <div class="step-num">STEP 01</div>
+          <div class="step-title">User asks a question</div>
+          <div class="step-sub">Natural language query</div>
+          <div class="step-detail" id="q1">
+            Employee types a question — "How do I reset a locked account?" or "What is the SLA for P1 incidents?" This is the entry point. You may want to preprocess the query — clean it, detect language, check for PII before sending to the LLM pipeline.
+          </div>
+        </div>
+        <div class="pipeline-arrow">↓</div>
+        <div class="pipeline-step" onclick="toggleStep('q2')">
+          <div class="step-num">STEP 02</div>
+          <div class="step-title">Embed the query</div>
+          <div class="step-sub">Same model as ingestion — critical</div>
+          <div class="step-detail" id="q2">
+            Convert the user's question to an embedding using the exact same model used during ingestion. This is critical — if you use a different model, the vectors are in different spaces and similarity search fails. This call happens in real time and takes ~50ms with Azure OpenAI.
+          </div>
+        </div>
+        <div class="pipeline-arrow">↓</div>
+        <div class="pipeline-step" onclick="toggleStep('q3')">
+          <div class="step-num">STEP 03</div>
+          <div class="step-title">Similarity search</div>
+          <div class="step-sub">Find top-K most relevant chunks</div>
+          <div class="step-detail" id="q3">
+            Search the vector DB for the top 5–10 chunks most similar to the query embedding. Similarity is measured by cosine distance — how close the vectors are in high-dimensional space. For enterprise ITSM, use hybrid search — vector similarity PLUS keyword matching. This handles cases where exact technical terms matter (e.g. "VPN-2024" won't be found by semantic search alone).
+          </div>
+        </div>
+        <div class="pipeline-arrow">↓</div>
+        <div class="pipeline-step" onclick="toggleStep('q4')">
+          <div class="step-num">STEP 04</div>
+          <div class="step-title">Build prompt + call LLM</div>
+          <div class="step-sub">Context + question → answer</div>
+          <div class="step-detail" id="q4">
+            Combine: system instructions + retrieved chunks + user question into one prompt. Send to GPT-4o or Azure OpenAI. The LLM generates an answer grounded in the retrieved chunks. Critical rule — instruct the LLM to say "I don't know" if the answer is not in the retrieved chunks. Never let it hallucinate from its training data.
+          </div>
+        </div>
+        <div class="pipeline-arrow">↓</div>
+        <div class="pipeline-step" onclick="toggleStep('q5')">
+          <div class="step-num">STEP 05</div>
+          <div class="step-title">Return answer + sources</div>
+          <div class="step-sub">Grounded, verifiable response</div>
+          <div class="step-detail" id="q5">
+            Return the answer with citations — which KB articles were used. This is critical for enterprise trust. Users can click through and verify. It also helps catch when the system retrieved wrong documents. At Ivanti we showed the top 3 source articles alongside every AI answer.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CHUNKING -->
+<div class="section" id="s3">
+  <div class="section-label">Chunking strategies</div>
+  <h2>How to split documents — and why it matters</h2>
+  <p class="section-intro">Chunking is the most underestimated part of RAG. Bad chunking = bad answers, even with a perfect LLM. Click each strategy to see it in action.</p>
+
+  <div class="chunk-demo">
+    <div class="chunk-controls">
+      <button class="chunk-btn active" onclick="showChunk('fixed', this)">Fixed size</button>
+      <button class="chunk-btn" onclick="showChunk('paragraph', this)">Paragraph-based</button>
+      <button class="chunk-btn" onclick="showChunk('semantic', this)">Semantic</button>
+    </div>
+
+    <div class="doc-visual" id="chunk-visual">
+      <!-- filled by JS -->
+    </div>
+
+    <div class="chunk-info" id="chunk-info"></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <h3 style="font-size:1.1rem;font-weight:600;margin-bottom:1rem">Overlap — the hidden key</h3>
+  <div class="card" style="margin-top:0">
+    <div style="display:flex;gap:2rem;flex-wrap:wrap;align-items:center">
+      <div style="flex:1;min-width:200px">
+        <p style="font-size:13px;color:var(--muted);line-height:1.8">Without overlap, answers that span two chunk boundaries get missed. With 10–15% overlap, every boundary is covered. This is a senior-level detail that matters significantly at scale.</p>
+      </div>
+      <div style="flex:1;min-width:200px">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:0.5rem">Chunk 1 (tokens 1–500)</div>
+        <div style="height:8px;background:linear-gradient(90deg,rgba(99,102,241,0.6),rgba(99,102,241,0.3));border-radius:4px;margin-bottom:6px"></div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:0.5rem">Chunk 2 (tokens 450–950) — 10% overlap</div>
+        <div style="height:8px;background:linear-gradient(90deg,rgba(34,211,238,0.3),rgba(34,211,238,0.6));border-radius:4px;margin-bottom:6px;margin-left:10%"></div>
+        <div style="font-size:11px;color:var(--accent);margin-top:0.5rem">↑ Tokens 450–500 appear in both chunks</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SCALE -->
+<div class="section" id="s4">
+  <div class="section-label">Scale</div>
+  <h2>What changes at 50 lakh+ documents</h2>
+  <p class="section-intro">The architecture changes significantly at scale. Understanding these differences is critical for production deployments.</p>
+
+  <table class="scale-table">
+    <thead>
+      <tr>
+        <th>Scale</th>
+        <th>Documents</th>
+        <th>Embedding strategy</th>
+        <th>Vector DB choice</th>
+        <th>Key challenge</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="badge" style="background:rgba(16,185,129,0.15);color:#10b981">Small</span></td>
+        <td style="font-family:var(--mono);font-size:12px">Up to 10,000</td>
+        <td>Sync, single batch</td>
+        <td>Azure AI Search, Chroma</td>
+        <td>Getting started fast</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:rgba(245,158,11,0.15);color:#f59e0b">Medium</span></td>
+        <td style="font-family:var(--mono);font-size:12px">10K – 5 lakh</td>
+        <td>Async queue, batch jobs</td>
+        <td>Azure AI Search, Weaviate</td>
+        <td>Incremental updates, stale docs</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:rgba(244,63,94,0.15);color:#f43f5e">Large</span></td>
+        <td style="font-family:var(--mono);font-size:12px">5L – 50 lakh</td>
+        <td>Distributed pipeline, Kafka</td>
+        <td>Elasticsearch + vectors, Qdrant</td>
+        <td>Search latency, index size, cost</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:rgba(167,139,250,0.15);color:#a78bfa">Massive</span></td>
+        <td style="font-family:var(--mono);font-size:12px">50 lakh+</td>
+        <td>Streaming pipeline, sharded</td>
+        <td>Elasticsearch sharded, Milvus</td>
+        <td>Multi-tenancy, cost control, freshness</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="card-grid" style="margin-top:1.5rem">
+    <div class="card">
+      <div class="card-icon" style="background:rgba(244,63,94,0.1)">⚡</div>
+      <h3>Batch embedding pipeline</h3>
+      <p>At 50L+ docs, you cannot embed one by one. Use Kafka or Azure Service Bus to queue documents. Workers pick up batches of 2048 chunks. Run in parallel across multiple workers. Estimated time — 50 lakh documents ≈ 12–18 hours on 10 parallel workers.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(245,158,11,0.1)">🔄</div>
+      <h3>Incremental updates</h3>
+      <p>When a KB article is updated, don't reindex everything. Use document versioning — store doc_id and updated_at with each chunk. On update, delete old chunks for that doc_id and reindex only the changed document. This is critical for ITSM where KB articles change frequently.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(99,102,241,0.1)">💰</div>
+      <h3>Cost control at scale</h3>
+      <p>At 50L documents, embedding costs matter. text-embedding-ada-002 costs $0.0001 per 1000 tokens. 50L documents × 400 tokens avg = 200 billion tokens ≈ $20,000 for one full reindex. Use smaller models (text-embedding-3-small) or open source (sentence-transformers) to reduce cost.</p>
+    </div>
+  </div>
+</div>
+
+<!-- VECTOR DB -->
+<div class="section" id="s5">
+  <div class="section-label">Vector databases</div>
+  <h2>Which vector DB to choose</h2>
+  <p class="section-intro">The right choice depends on your scale, existing stack, and whether you need hybrid search. Here's an honest comparison.</p>
+
+  <div class="vdb-grid">
+    <div class="vdb-card recommended">
+      <div style="font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem">⭐ Recommended for ITSM</div>
+      <div class="vdb-name">Azure AI Search</div>
+      <div class="vdb-type">Cloud managed</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Hybrid search</div>
+      <div class="meter"><div class="meter-fill animate-bar" style="width:95%;background:var(--accent)"></div></div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Scale</div>
+      <div class="meter"><div class="meter-fill animate-bar" style="width:85%;background:var(--accent2);animation-delay:0.1s"></div></div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Ease of setup</div>
+      <div class="meter"><div class="meter-fill animate-bar" style="width:90%;background:var(--green);animation-delay:0.2s"></div></div>
+      <div class="vdb-feat">Best hybrid search. Integrates with Azure OpenAI natively. Already in your stack if using Azure. Best choice for enterprise ITSM.</div>
+    </div>
+
+    <div class="vdb-card">
+      <div class="vdb-name">Elasticsearch</div>
+      <div class="vdb-type">Self-hosted / cloud</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Hybrid search</div>
+      <div class="meter"><div class="meter-fill animate-bar" style="width:90%;background:var(--accent)"></div></div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Scale</div>
+      <div class="meter"><div class="meter-fill animate-bar" style="width:95%;background:var(--accent2);animation-delay:0.1s"></div></div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Ease of setup</div>
+      <div class="meter"><div class="meter-fill animate-bar" style="width:70%;background:var(--green);animation-delay:0.2s"></div></div>
+      <div class="vdb-feat">You already use this at Ivanti. Best for 50L+ scale. Dense vector + BM25 hybrid. More operational overhead than managed services.</div>
+    </div>
+
+    <div class="vdb-card">
+      <div class="vdb-name">Qdrant</div>
+      <div class="vdb-type">Open source / cloud</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Vector search</div>
+      <div class="meter"><div class="meter-fill animate-bar" style="width:88%;background:var(--accent)"></div></div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Scale</div>
+      <div class="meter"><div class="meter-fill animate-bar" style="width:85%;background:var(--accent2);animation-delay:0.1s"></div></div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Ease of setup</div>
+      <div class="meter"><div class="meter-fill animate-bar" style="width:85%;background:var(--green);animation-delay:0.2s"></div></div>
+      <div class="vdb-feat">Purpose-built for vectors. Written in Rust — very fast. Good filtering support. Popular in German AI companies. Worth knowing.</div>
+    </div>
+
+    <div class="vdb-card">
+      <div class="vdb-name">Weaviate</div>
+      <div class="vdb-type">Open source / cloud</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Hybrid search</div>
+      <div class="meter"><div class="meter-fill animate-bar" style="width:80%;background:var(--accent)"></div></div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Scale</div>
+      <div class="meter"><div class="meter-fill animate-bar" style="width:80%;background:var(--accent2);animation-delay:0.1s"></div></div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Ease of setup</div>
+      <div class="meter"><div class="meter-fill animate-bar" style="width:75%;background:var(--green);animation-delay:0.2s"></div></div>
+      <div class="vdb-feat">Schema-based. Good for structured data. Built-in modules for OpenAI. Good EU data residency options — good for EU data residency requirements.</div>
+    </div>
+
+    <div class="vdb-card">
+      <div class="vdb-name">Chroma</div>
+      <div class="vdb-type">Open source</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Vector search</div>
+      <div class="meter"><div class="meter-fill animate-bar" style="width:70%;background:var(--accent)"></div></div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Scale</div>
+      <div class="meter"><div class="meter-fill animate-bar" style="width:40%;background:var(--accent2);animation-delay:0.1s"></div></div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Ease of setup</div>
+      <div class="meter"><div class="meter-fill animate-bar" style="width:95%;background:var(--green);animation-delay:0.2s"></div></div>
+      <div class="vdb-feat">Easiest to start. Good for prototypes and small scale. Not suitable for 50L+ docs in production. Use for POCs only.</div>
+    </div>
+  </div>
+</div>
+
+<!-- EVALUATION -->
+<div class="section" id="s6">
+  <div class="section-label">Evaluation</div>
+  <h2>How do you know RAG is working?</h2>
+  <p class="section-intro">Evaluation is the most overlooked part of RAG. Without it, you have no idea if the system is working correctly in production.</p>
+
+  <div class="eval-grid">
+    <div class="eval-card">
+      <div class="eval-metric" style="color:var(--accent)">F↑</div>
+      <div class="eval-name">Faithfulness</div>
+      <div class="eval-desc">Is the answer grounded in the retrieved context? Does it hallucinate facts not in the source documents? Measure with RAGAS framework.</div>
+    </div>
+    <div class="eval-card">
+      <div class="eval-metric" style="color:var(--accent2)">AR↑</div>
+      <div class="eval-name">Answer relevance</div>
+      <div class="eval-desc">Does the answer actually address what the user asked? A faithful but off-topic answer is useless. Score with LLM-as-judge.</div>
+    </div>
+    <div class="eval-card">
+      <div class="eval-metric" style="color:var(--green)">CR↑</div>
+      <div class="eval-name">Context recall</div>
+      <div class="eval-desc">Did the retrieval step find all the relevant chunks? If the right KB article exists but wasn't retrieved, the answer will be wrong regardless of LLM quality.</div>
+    </div>
+    <div class="eval-card">
+      <div class="eval-metric" style="color:var(--accent3)">P50↓</div>
+      <div class="eval-name">Latency (p50/p95)</div>
+      <div class="eval-desc">End-to-end time from query to answer. For ITSM service desk, target under 3 seconds. Embedding + search + LLM call all add up. Monitor p95 not just average.</div>
+    </div>
+    <div class="eval-card">
+      <div class="eval-metric" style="color:var(--red)">H↓</div>
+      <div class="eval-name">Hallucination rate</div>
+      <div class="eval-desc">Percentage of answers that contain facts not in source documents. Target under 2% in production. Monitor with a golden test set of known Q&A pairs.</div>
+    </div>
+    <div class="eval-card">
+      <div class="eval-metric" style="color:var(--purple)">$/Q↓</div>
+      <div class="eval-name">Cost per query</div>
+      <div class="eval-desc">LLM tokens + embedding tokens + search calls. At scale this matters. At 1 million queries/day even $0.001 per query = $30,000/month. Track and optimise.</div>
+    </div>
+  </div>
+</div>
+
+<!-- INTERVIEW ANSWER -->
+<div class="section" id="s7">
+  <div class="section-label">End-to-end solution guide</div>
+  <h2>Complete end-to-end solution</h2>
+  <p class="section-intro">A complete walkthrough of the full RAG solution from ingestion to answer generation, in plain English.</p>
+
+  <div class="answer-box">
+    <div class="answer-label">Full solution walkthrough</div>
+    <p>"Before I design, can I ask a few things? How many documents approximately — hundreds or millions? What formats — PDFs, KB articles? Do documents update frequently? Any data privacy constraints like GDPR?"</p>
+    <p>"Okay, so I would build two pipelines. First the ingestion pipeline — we load all documents, split them into chunks of around 300 to 500 tokens using paragraph-based chunking with 10% overlap, convert each chunk to embeddings using Azure OpenAI's text-embedding model, and store everything in a vector database. For enterprise ITSM I'd use Azure AI Search because it supports hybrid search — vector plus keyword — which works better for technical terms."</p>
+    <p>"The query pipeline runs in real time. When an employee asks a question, we embed that query using the same model, do similarity search to find top 5 most relevant chunks, build a prompt with those chunks plus the question, and call GPT-4o. The LLM generates an answer grounded only in the retrieved documents. We always return citations so users can verify."</p>
+    <p>"At 50 lakh documents, the ingestion becomes a distributed pipeline — we'd use a message queue like Kafka, parallel embedding workers, and either Elasticsearch with vector support or Qdrant at that scale. Incremental updates are critical — when a KB article changes, we delete old chunks for that document and reindex only the changed one."</p>
+    <p>"For evaluation, I measure faithfulness, answer relevance, and hallucination rate using the RAGAS framework, plus latency at p95 and cost per query. We built something very similar at Ivanti for our Knowledge Base Article Generation feature and this architecture worked well in production."</p>
+  </div>
+
+  <div class="code-block" style="margin-top:2rem">
+    <span class="code-comment"># Simplified RAG pipeline — Python pseudocode</span><br><br>
+    <span class="code-keyword">def</span> <span class="code-func">ingest_document</span>(doc_path):<br>
+    &nbsp;&nbsp;chunks = <span class="code-func">chunk_by_paragraph</span>(doc_path, overlap=<span class="code-string">0.15</span>)<br>
+    &nbsp;&nbsp;embeddings = <span class="code-func">azure_openai.embed</span>(chunks, model=<span class="code-string">"text-embedding-ada-002"</span>)<br>
+    &nbsp;&nbsp;<span class="code-func">vector_db.upsert</span>(chunks, embeddings, metadata)<br><br>
+    <span class="code-keyword">def</span> <span class="code-func">answer_query</span>(user_question):<br>
+    &nbsp;&nbsp;q_embedding = <span class="code-func">azure_openai.embed</span>([user_question])<br>
+    &nbsp;&nbsp;top_chunks = <span class="code-func">vector_db.hybrid_search</span>(q_embedding, k=<span class="code-string">5</span>)<br>
+    &nbsp;&nbsp;prompt = <span class="code-func">build_prompt</span>(user_question, top_chunks)<br>
+    &nbsp;&nbsp;answer = <span class="code-func">azure_openai.chat</span>(prompt, model=<span class="code-string">"gpt-4o"</span>)<br>
+    &nbsp;&nbsp;<span class="code-keyword">return</span> answer, top_chunks  <span class="code-comment"># always return sources</span>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div style="text-align:center;padding:4rem 2rem;color:var(--muted);font-size:13px;border-top:1px solid var(--border)">
+  <p style="margin-bottom:0.5rem">Kuldeep Rao</p>
+  <p>RAG · Enterprise ITSM · Knowledge Platforms</p>
+</div>
+
+<script>
+  // Scroll reveal
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.section').forEach(s => observer.observe(s));
+
+  // Pipeline step toggle
+  function toggleStep(id) {
+    const el = document.getElementById(id);
+    const step = el.parentElement;
+    const isOpen = el.classList.contains('open');
+    document.querySelectorAll('.step-detail').forEach(d => d.classList.remove('open'));
+    document.querySelectorAll('.pipeline-step').forEach(s => s.classList.remove('active'));
+    if (!isOpen) { el.classList.add('open'); step.classList.add('active'); }
+  }
+
+  // Chunking demo
+  const chunks = {
+    fixed: {
+      blocks: [
+        { text: 'The IT service desk handles all incoming requests...', color: 'rgba(99,102,241,0.25)', label: 'Chunk 1 (0–500 tokens)' },
+        { text: '...from employees across the organization. Tickets are classified...', color: 'rgba(34,211,238,0.2)', label: 'Chunk 2 (450–950 tokens)' },
+        { text: '...by priority P1 through P4. P1 incidents require immediate...', color: 'rgba(245,158,11,0.2)', label: 'Chunk 3 (900–1400 tokens)' },
+        { text: '...response within 15 minutes. All agents must acknowledge...', color: 'rgba(244,63,94,0.2)', label: 'Chunk 4 (1350–1850 tokens)' },
+      ],
+      info: '⚠️ Fixed size: Fast and simple but cuts mid-sentence. "...response within 15 minutes" is split from its context. Answer quality suffers for questions spanning chunk boundaries.'
+    },
+    paragraph: {
+      blocks: [
+        { text: 'The IT service desk handles all incoming requests from employees across the organization.', color: 'rgba(99,102,241,0.25)', label: 'Chunk 1 — Paragraph 1 (complete thought)' },
+        { text: 'Tickets are classified by priority P1 through P4 based on business impact and urgency.', color: 'rgba(34,211,238,0.2)', label: 'Chunk 2 — Paragraph 2 (complete thought)' },
+        { text: 'P1 incidents require immediate response within 15 minutes. All agents must acknowledge and begin working the issue.', color: 'rgba(16,185,129,0.2)', label: 'Chunk 3 — Paragraph 3 (complete thought)' },
+      ],
+      info: '✅ Paragraph-based: Each chunk is a complete idea. Much better answer quality. Best for structured KB articles and SOPs. This is what we used at Ivanti.'
+    },
+    semantic: {
+      blocks: [
+        { text: 'The IT service desk handles all incoming requests from employees. Tickets are classified by priority.', color: 'rgba(99,102,241,0.25)', label: 'Semantic cluster 1 — Topic: ticket intake' },
+        { text: 'P1 incidents require immediate response within 15 minutes. P2 incidents within 4 hours. SLA breach triggers escalation.', color: 'rgba(167,139,250,0.2)', label: 'Semantic cluster 2 — Topic: SLA and response times' },
+        { text: 'Agents must acknowledge issues, update status, and communicate with users at every step of resolution.', color: 'rgba(34,211,238,0.2)', label: 'Semantic cluster 3 — Topic: agent responsibilities' },
+      ],
+      info: '🚀 Semantic chunking: AI decides where to split based on meaning. Best quality but more complex and slower to ingest. Good for 5L+ documents where quality matters most.'
+    }
+  };
+
+  function showChunk(type, btn) {
+    document.querySelectorAll('.chunk-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    const data = chunks[type];
+    const visual = document.getElementById('chunk-visual');
+    visual.innerHTML = data.blocks.map(b =>
+      `<div class="chunk-block" style="background:${b.color};border-left:3px solid ${b.color.replace('0.', '0.8')}">
+        <div style="font-size:10px;color:rgba(255,255,255,0.5);margin-bottom:2px">${b.label}</div>
+        <div>${b.text}</div>
+      </div>`
+    ).join('');
+    document.getElementById('chunk-info').textContent = data.info;
+  }
+
+  showChunk('fixed', document.querySelector('.chunk-btn'));
+</script>
+</body>
+</html>
