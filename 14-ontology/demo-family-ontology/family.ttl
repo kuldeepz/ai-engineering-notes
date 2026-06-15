@@ -1,0 +1,69 @@
+@prefix :    <http://example.org/family#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+#################################################################
+#  Ontology header
+#################################################################
+<http://example.org/family> a owl:Ontology ;
+    rdfs:comment "A tiny kinship ontology to demonstrate OWL reasoning." .
+
+#################################################################
+#  Classes  (the TBox / schema)
+#################################################################
+:Person a owl:Class .
+
+:Man   a owl:Class ; rdfs:subClassOf :Person .
+:Woman a owl:Class ; rdfs:subClassOf :Person .
+
+# A Parent is, BY DEFINITION, any Person who has a child.
+# We never tag anyone as :Parent in the data below — the reasoner does it.
+:Parent a owl:Class ;
+    owl:equivalentClass [
+        a owl:Restriction ;
+        owl:onProperty :hasChild ;
+        owl:someValuesFrom :Person
+    ] .
+
+#################################################################
+#  Object properties
+#################################################################
+
+# hasParent / hasChild are inverses: state one, get the other for free.
+:hasParent a owl:ObjectProperty ;
+    rdfs:domain :Person ;
+    rdfs:range  :Person ;
+    owl:inverseOf :hasChild .
+
+:hasChild a owl:ObjectProperty .
+
+# hasAncestor is TRANSITIVE, and every parent is an ancestor.
+# => great-grandparents etc. are inferred automatically.
+:hasAncestor a owl:ObjectProperty , owl:TransitiveProperty .
+:hasParent rdfs:subPropertyOf :hasAncestor .
+
+# hasGrandparent is defined as a PROPERTY CHAIN: parent-of-a-parent.
+:hasGrandparent a owl:ObjectProperty ;
+    owl:propertyChainAxiom ( :hasParent :hasParent ) .
+
+#################################################################
+#  Individuals  (the ABox / data)  --  we assert ONLY hasParent + gender
+#################################################################
+
+:Alice  a :Woman .
+:Bob    a :Man .
+:Carol  a :Woman .
+:Dave   a :Man .
+:Eve    a :Woman .
+:Frank  a :Man .
+
+# Two generations of asserted facts. Note: NO grandparent / ancestor /
+# child / "Parent" facts are stated. Everything else is derived.
+:Carol :hasParent :Alice .
+:Carol :hasParent :Bob .
+:Dave  :hasParent :Alice .
+:Dave  :hasParent :Bob .
+:Eve   :hasParent :Carol .
+:Frank :hasParent :Carol .
