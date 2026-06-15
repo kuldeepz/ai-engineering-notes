@@ -729,6 +729,98 @@ footer span{color:var(--text);}
       </div>
     </div>
   </div>
+
+  <!-- Chart 3: Class Hierarchy & Transitive Reasoning -->
+  <div class="card" style="padding:2rem;margin-top:1.5rem">
+    <h3 style="margin-bottom:0.4rem">Class Hierarchy — Transitive Reasoning</h3>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:1.5rem">How <code style="background:var(--bg3);padding:1px 6px;border-radius:4px;font-size:12px">rdfs:subClassOf</code> chains let the OWL reasoner automatically type-promote an instance up the whole hierarchy — no extra rules written.</p>
+    <button id="btn-play3" onclick="playClassHierarchy()" style="padding:8px 20px;border-radius:8px;border:1px solid rgba(99,102,241,0.4);background:rgba(99,102,241,0.15);color:#a5b4fc;font-family:var(--font);font-size:13px;cursor:pointer;margin-bottom:1.5rem">▶ Run reasoning</button>
+
+    <svg id="c3-svg" viewBox="0 0 720 295" style="width:100%;height:auto;background:var(--bg3);border-radius:12px;border:1px solid var(--border)">
+      <defs>
+        <marker id="c3-arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#a78bfa"/>
+        </marker>
+        <marker id="c3-arr-c" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#22d3ee"/>
+        </marker>
+        <marker id="c3-arr-g" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#10b981"/>
+        </marker>
+        <marker id="c3-arr-w" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#94a3b8"/>
+        </marker>
+      </defs>
+
+      <!-- ── CLASS BOXES (top row) ── -->
+      <g id="c3-icu" style="opacity:0">
+        <rect x="15" y="40" width="155" height="55" rx="10" fill="rgba(167,139,250,0.12)" stroke="#a78bfa" stroke-width="2"/>
+        <text x="92" y="61" text-anchor="middle" font-size="10" fill="#c4b5fd" font-family="JetBrains Mono,monospace" font-style="italic">owl:Class</text>
+        <text x="92" y="81" text-anchor="middle" font-size="13" fill="#e2e8f0" font-family="Inter,sans-serif" font-weight="600">ICUPatient</text>
+      </g>
+
+      <g id="c3-inp" style="opacity:0">
+        <rect x="283" y="40" width="155" height="55" rx="10" fill="rgba(34,211,238,0.08)" stroke="#22d3ee" stroke-width="2"/>
+        <text x="360" y="61" text-anchor="middle" font-size="10" fill="#67e8f9" font-family="JetBrains Mono,monospace" font-style="italic">owl:Class</text>
+        <text x="360" y="81" text-anchor="middle" font-size="13" fill="#e2e8f0" font-family="Inter,sans-serif" font-weight="600">InPatient</text>
+      </g>
+
+      <g id="c3-pat" style="opacity:0">
+        <rect x="550" y="40" width="155" height="55" rx="10" fill="rgba(99,102,241,0.1)" stroke="#6366f1" stroke-width="2"/>
+        <text x="627" y="61" text-anchor="middle" font-size="10" fill="#a5b4fc" font-family="JetBrains Mono,monospace" font-style="italic">owl:Class</text>
+        <text x="627" y="81" text-anchor="middle" font-size="13" fill="#e2e8f0" font-family="Inter,sans-serif" font-weight="600">Patient</text>
+      </g>
+
+      <!-- ── subClassOf EDGES ── -->
+      <line id="c3-sc1" x1="170" y1="67" x2="283" y2="67" stroke="#a78bfa" stroke-width="2" marker-end="url(#c3-arr)" stroke-dasharray="113" stroke-dashoffset="113" style="opacity:0"/>
+      <text id="c3-lbl-sc1" x="226" y="57" text-anchor="middle" font-size="10" fill="#c4b5fd" font-family="JetBrains Mono,monospace" style="opacity:0">subClassOf</text>
+
+      <line id="c3-sc2" x1="438" y1="67" x2="550" y2="67" stroke="#22d3ee" stroke-width="2" marker-end="url(#c3-arr-c)" stroke-dasharray="112" stroke-dashoffset="112" style="opacity:0"/>
+      <text id="c3-lbl-sc2" x="494" y="57" text-anchor="middle" font-size="10" fill="#67e8f9" font-family="JetBrains Mono,monospace" style="opacity:0">subClassOf</text>
+
+      <!-- ── JOHN INSTANCE (dashed = individual) ── -->
+      <g id="c3-john" style="opacity:0">
+        <rect x="15" y="200" width="155" height="55" rx="10" fill="rgba(16,185,129,0.08)" stroke="#10b981" stroke-width="2" stroke-dasharray="7 3"/>
+        <text x="92" y="220" text-anchor="middle" font-size="10" fill="#6ee7b7" font-family="JetBrains Mono,monospace" font-style="italic">owl:NamedIndividual</text>
+        <text x="92" y="242" text-anchor="middle" font-size="13" fill="#e2e8f0" font-family="Inter,sans-serif" font-weight="600">john</text>
+      </g>
+
+      <!-- ── TYPE EDGES ── -->
+      <!-- Asserted: john → rdf:type → ICUPatient (solid gray) -->
+      <line id="c3-assert" x1="92" y1="200" x2="92" y2="95" stroke="#94a3b8" stroke-width="2" marker-end="url(#c3-arr-w)" stroke-dasharray="105" stroke-dashoffset="105" style="opacity:0"/>
+      <text id="c3-lbl-assert" x="112" y="150" font-size="10" fill="#94a3b8" font-family="JetBrains Mono,monospace" style="opacity:0">rdf:type</text>
+      <text id="c3-lbl-assert2" x="112" y="162" font-size="9" fill="#64748b" font-family="Inter,sans-serif" style="opacity:0">(asserted)</text>
+
+      <!-- OWL Reasoner badge -->
+      <g id="c3-reasoner" style="opacity:0">
+        <rect x="252" y="152" width="220" height="38" rx="9" fill="rgba(245,158,11,0.12)" stroke="#f59e0b" stroke-width="1.5"/>
+        <text x="362" y="168" text-anchor="middle" font-size="12" fill="#fbbf24" font-family="Inter,sans-serif" font-weight="600">⚡ OWL Reasoner fires</text>
+        <text x="362" y="183" text-anchor="middle" font-size="10" fill="#d97706" font-family="Inter,sans-serif">rdfs:subClassOf is transitive</text>
+      </g>
+
+      <!-- Inferred: john → rdf:type → InPatient (dashed green) -->
+      <line id="c3-inf1" x1="170" y1="227" x2="360" y2="95" stroke="#10b981" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#c3-arr-g)" style="opacity:0"/>
+      <text id="c3-lbl-inf1" x="248" y="168" text-anchor="middle" font-size="10" fill="#6ee7b7" font-family="JetBrains Mono,monospace" style="opacity:0">rdf:type ✓</text>
+
+      <!-- Inferred: john → rdf:type → Patient (dashed green) -->
+      <line id="c3-inf2" x1="170" y1="227" x2="620" y2="95" stroke="#10b981" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#c3-arr-g)" style="opacity:0"/>
+      <text id="c3-lbl-inf2" x="440" y="215" text-anchor="middle" font-size="10" fill="#6ee7b7" font-family="JetBrains Mono,monospace" style="opacity:0">rdf:type ✓</text>
+
+      <!-- Legend -->
+      <rect x="10" y="264" width="700" height="24" rx="6" fill="rgba(255,255,255,0.02)"/>
+      <line x1="25" y1="276" x2="50" y2="276" stroke="#94a3b8" stroke-width="2"/>
+      <text x="58" y="280" font-size="10" fill="#64748b" font-family="Inter,sans-serif">asserted</text>
+      <line x1="130" y1="276" x2="155" y2="276" stroke="#10b981" stroke-width="2" stroke-dasharray="5 4"/>
+      <text x="163" y="280" font-size="10" fill="#64748b" font-family="Inter,sans-serif">inferred</text>
+      <line x1="230" y1="276" x2="255" y2="276" stroke="#a78bfa" stroke-width="2"/>
+      <text x="263" y="280" font-size="10" fill="#64748b" font-family="Inter,sans-serif">subClassOf</text>
+      <text x="420" y="280" font-size="10" fill="#64748b" font-family="Inter,sans-serif">dashed box = individual (instance)</text>
+    </svg>
+
+    <div id="c3-explain" style="margin-top:1rem;min-height:48px;padding:1rem 1.25rem;background:var(--bg3);border-radius:10px;border:1px solid var(--border);font-size:13px;color:var(--muted);line-height:1.7;transition:opacity 0.4s ease">
+      Press <strong style="color:var(--accent2)">Run reasoning</strong> to step through the class hierarchy inference.
+    </div>
+  </div>
 </section>
 
 <footer>
@@ -947,6 +1039,69 @@ function playInference() {
     btn.disabled = false; btn.style.opacity = '1';
     btn.textContent = '↺ Run again';
   }, 4100);
+}
+
+// ===== CLASS HIERARCHY ANIMATION =====
+const C3_SEQ = [
+  { id:'c3-icu',         delay:200  },
+  { id:'c3-inp',         delay:600  },
+  { id:'c3-pat',         delay:1000 },
+  { id:'c3-sc1',         delay:1400, len:113 },
+  { id:'c3-lbl-sc1',     delay:1600 },
+  { id:'c3-sc2',         delay:1900, len:112 },
+  { id:'c3-lbl-sc2',     delay:2100 },
+  { id:'c3-john',        delay:2600 },
+  { id:'c3-assert',      delay:3100, len:105 },
+  { id:'c3-lbl-assert',  delay:3300 },
+  { id:'c3-lbl-assert2', delay:3300 },
+  { id:'c3-reasoner',    delay:3800 },
+  { id:'c3-inf1',        delay:4300 },
+  { id:'c3-lbl-inf1',    delay:4550 },
+  { id:'c3-inf2',        delay:4900 },
+  { id:'c3-lbl-inf2',    delay:5150 },
+];
+
+function playClassHierarchy() {
+  const btn = document.getElementById('btn-play3');
+  btn.disabled = true; btn.style.opacity = '0.5';
+
+  const exp = document.getElementById('c3-explain');
+  exp.style.opacity = '0.4';
+  exp.innerHTML = 'Press <strong style="color:var(--accent2)">Run reasoning</strong> to step through the class hierarchy inference.';
+  exp.style.opacity = '1';
+
+  C3_SEQ.forEach(({ id, len }) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.transition = 'none';
+    el.style.opacity = '0';
+    if (len !== undefined) el.setAttribute('stroke-dashoffset', len);
+  });
+
+  void document.getElementById('c3-svg').getBoundingClientRect();
+
+  C3_SEQ.forEach(({ id, delay, len }) => {
+    setTimeout(() => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (len !== undefined) {
+        el.style.transition = 'opacity 0.45s ease, stroke-dashoffset 0.55s ease';
+        el.setAttribute('stroke-dashoffset', '0');
+      } else {
+        el.style.transition = 'opacity 0.45s ease';
+      }
+      el.style.opacity = '1';
+    }, delay);
+  });
+
+  setTimeout(() => {
+    exp.innerHTML = '<strong style="color:#fbbf24">⚡ What happened:</strong> Only one triple was stored — <code style="background:var(--bg2);padding:1px 5px;border-radius:3px">john rdf:type ICUPatient</code>. The reasoner derived <code style="background:var(--bg2);padding:1px 5px;border-radius:3px">john rdf:type InPatient</code> and <code style="background:var(--bg2);padding:1px 5px;border-radius:3px">john rdf:type Patient</code> automatically by applying the transitivity of <code style="background:var(--bg2);padding:1px 5px;border-radius:3px">rdfs:subClassOf</code>. Add 10,000 more patients — they all get promoted instantly, no extra code.';
+  }, 3800);
+
+  setTimeout(() => {
+    btn.disabled = false; btn.style.opacity = '1';
+    btn.textContent = '↺ Run again';
+  }, 5700);
 }
 </script>
 </body>
