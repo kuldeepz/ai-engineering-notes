@@ -21,6 +21,8 @@ Each guide is a standalone HTML file. Open in any browser, no dependencies.
 | [11](https://kuldeepz.github.io/ai-engineering-notes/11-ai-team-structure/) | AI Team Structure | Roles, team models, maturity stages, platform team, hiring |
 | [12](https://kuldeepz.github.io/ai-engineering-notes/12-ai-roadmap-prioritisation/) | AI Roadmap Prioritisation | Scoring framework, build vs buy, stakeholder alignment, quarterly planning |
 | [13](https://kuldeepz.github.io/ai-engineering-notes/13-ai-project-estimation/) | AI Project Estimation | 5 phases, uncertainty cones, data tax, risk factors, range-based estimates |
+| [14a](https://kuldeepz.github.io/ai-engineering-notes/14-ontology/) | Ontology Fundamentals | Classes, properties, axioms, OWL/RDF/SPARQL, reasoning, tools |
+| [14b](https://kuldeepz.github.io/ai-engineering-notes/14-ontology/applied.html) | Ontology in AI & Enterprise | Knowledge graphs, ontology-enhanced RAG, CMDB, AIOps, LLM grounding |
 
 ## How to use
 

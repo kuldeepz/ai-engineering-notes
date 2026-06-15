@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ontology in AI & Enterprise — Knowledge Graphs, RAG, AIOps & LLM Grounding</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+:root{--bg:#0f1117;--bg2:#161b27;--bg3:#1e2535;--border:rgba(255,255,255,0.08);--text:#e2e8f0;--muted:#8892a4;--accent:#6366f1;--accent2:#22d3ee;--accent3:#f59e0b;--green:#10b981;--red:#f43f5e;--purple:#a78bfa;--font:'Inter',sans-serif;--mono:'JetBrains Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.7;overflow-x:hidden}
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4rem 2rem;position:relative;overflow:hidden}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(99,102,241,0.07) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,0.07) 1px,transparent 1px);background-size:48px 48px;mask-image:radial-gradient(ellipse at center,black 30%,transparent 80%)}
+.hero-glow{position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(99,102,241,0.12) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);border-radius:100px;padding:6px 16px;font-size:12px;font-weight:500;color:#a5b4fc;margin-bottom:1rem;letter-spacing:0.05em;text-transform:uppercase}
+.part-link{display:inline-block;font-size:13px;color:var(--muted);text-decoration:none;margin-bottom:1.5rem;transition:color 0.2s}.part-link:hover{color:var(--accent2)}
+.hero h1{font-size:clamp(2.5rem,6vw,4.5rem);font-weight:600;letter-spacing:-0.03em;line-height:1.1;margin-bottom:1.5rem;position:relative}
+.hero h1 span{background:linear-gradient(135deg,#6366f1,#22d3ee);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero p{font-size:1.15rem;color:var(--muted);max-width:600px;margin-bottom:3rem;position:relative}
+.hero-stats{display:flex;gap:3rem;position:relative;flex-wrap:wrap;justify-content:center}
+.stat{text-align:center}.stat-num{font-size:2rem;font-weight:600;color:var(--accent2);font-family:var(--mono)}.stat-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em}
+.scroll-hint{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);color:var(--muted);font-size:12px;display:flex;flex-direction:column;align-items:center;gap:8px;animation:bounce 2s ease-in-out infinite}
+@keyframes bounce{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(8px)}}
+.section{max-width:960px;margin:0 auto;padding:5rem 2rem;opacity:0;transform:translateY(30px);transition:opacity 0.6s ease,transform 0.6s ease}
+.section.visible{opacity:1;transform:translateY(0)}
+.section-label{font-size:11px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:0.75rem}
+.section h2{font-size:clamp(1.6rem,3vw,2.2rem);font-weight:600;letter-spacing:-0.02em;margin-bottom:1rem;line-height:1.2}
+.section-intro{color:var(--muted);font-size:1.05rem;max-width:700px;margin-bottom:3rem}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1.5rem;transition:border-color 0.2s,transform 0.2s}
+.card:hover{border-color:rgba(99,102,241,0.3);transform:translateY(-2px)}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem}
+.card-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:1rem}
+.card h3{font-size:1rem;font-weight:600;margin-bottom:0.5rem}.card p{font-size:13px;color:var(--muted);line-height:1.6}
+.tag{display:inline-block;font-size:11px;font-weight:500;padding:3px 10px;border-radius:100px;margin-top:0.75rem}
+.expand-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;margin-bottom:0.75rem;overflow:hidden}
+.expand-header{padding:1.25rem 1.5rem;cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-weight:600;font-size:0.95rem;transition:background 0.2s}
+.expand-header:hover{background:var(--bg3)}
+.expand-arrow{font-size:12px;color:var(--muted);transition:transform 0.3s}
+.expand-body{display:none;padding:0 1.5rem 1.5rem}
+.expand-body p{font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:0.75rem}
+.tab-controls{display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1.5rem;border-bottom:1px solid var(--border);padding-bottom:1rem}
+.tab-btn{padding:8px 18px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--muted);font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.2s}
+.tab-btn.active{background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.3);color:#a5b4fc}
+.tab-btn:hover:not(.active){color:var(--text)}
+.tab-panel{display:none;animation:fadeIn 0.3s ease}.tab-panel.active{display:block}
+.flow{display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin:1.5rem 0}
+.flow-node{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.6rem 1rem;font-size:12px;font-weight:500;text-align:center;min-width:90px;line-height:1.4}
+.flow-arrow{color:var(--muted);font-size:16px;flex-shrink:0}
+.flow-node.hi{background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.4);color:#a5b4fc}
+.flow-node.gr{background:rgba(16,185,129,0.12);border-color:rgba(16,185,129,0.3);color:#6ee7b7}
+.scale-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:1.5rem}
+.scale-table th{text-align:left;padding:10px 16px;background:var(--bg3);color:var(--muted);font-weight:500;font-size:11px;letter-spacing:0.08em;text-transform:uppercase}
+.scale-table th:first-child{border-radius:8px 0 0 8px}.scale-table th:last-child{border-radius:0 8px 8px 0}
+.scale-table td{padding:12px 16px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.6}
+.scale-table tr:last-child td{border-bottom:none}.scale-table tr:hover td{background:rgba(255,255,255,0.02)}
+.answer-box{background:linear-gradient(135deg,rgba(99,102,241,0.08),rgba(34,211,238,0.05));border:1px solid rgba(99,102,241,0.25);border-radius:16px;padding:2rem;margin-top:2rem}
+.answer-box h3{font-size:1rem;font-weight:600;margin-bottom:1rem;color:var(--accent2)}
+.answer-box p{font-size:14px;color:var(--muted);line-height:1.9}.answer-box p+p{margin-top:0.75rem}
+.code-block{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:1.25rem 1.5rem;font-family:var(--mono);font-size:12px;line-height:1.8;overflow-x:auto;margin-top:1rem}
+.cc{color:#6b7280}.ck{color:#a78bfa}.cs{color:#34d399}.cf{color:#60a5fa}.cn{color:#f59e0b}.cm{color:#f472b6}
+.divider{width:100%;height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:2rem 0}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.comp-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.25rem}
+.comp-box h4{font-size:0.85rem;font-weight:600;margin-bottom:0.75rem;text-transform:uppercase;letter-spacing:0.08em}
+.comp-box ul{list-style:none;padding:0}.comp-box li{font-size:13px;color:var(--muted);padding:4px 0;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:8px}
+.comp-box li:last-child{border-bottom:none}
+footer{text-align:center;padding:3rem 2rem;color:var(--muted);font-size:13px;border-top:1px solid var(--border)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:3px}
+@media(max-width:640px){.hero-stats{gap:1.5rem}.flow{flex-direction:column}.flow-arrow{transform:rotate(90deg)}.tab-btn{padding:6px 12px;font-size:12px}.two-col{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){*,.section{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-badge">Knowledge Graphs · RAG · AIOps · CMDB · LLM Grounding</div>
+  <a href="index.html" class="part-link">← Part 1: Ontology Fundamentals</a>
+  <h1>Ontology in <span>AI & Enterprise</span></h1>
+  <p>How ontologies power knowledge graphs, improve RAG retrieval, enable semantic AIOps, and ground LLMs with accurate domain knowledge.</p>
+  <div class="hero-stats">
+    <div class="stat"><div class="stat-num">3</div><div class="stat-label">domains</div></div>
+    <div class="stat"><div class="stat-num">4</div><div class="stat-label">RAG patterns</div></div>
+    <div class="stat"><div class="stat-num">2</div><div class="stat-label">query types</div></div>
+    <div class="stat"><div class="stat-num">∞</div><div class="stat-label">inferences</div></div>
+  </div>
+  <div class="scroll-hint">↓ scroll</div>
+</div>
+
+<!-- 1. Why AI needs ontology -->
+<div class="section">
+  <div class="section-label">Foundation</div>
+  <h2>Why AI systems need ontologies</h2>
+  <p class="section-intro">Without a structured model of your domain, AI systems hallucinate relationships, miss structural connections, and cannot plan across dependent entities.</p>
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-icon" style="background:rgba(244,63,94,0.15)">🤖</div>
+      <h3>LLMs without ontology</h3>
+      <p>Hallucinate relationships, invent cardinalities, and have no reliable model of your domain's structure — especially for proprietary enterprise data.</p>
+      <span class="tag" style="background:rgba(244,63,94,0.15);color:#fb7185">Ungrounded</span>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(245,158,11,0.15)">🔍</div>
+      <h3>RAG without ontology</h3>
+      <p>Vector similarity finds semantically close chunks but misses structural relationships — "what depends on this server?" requires graph traversal, not cosine similarity.</p>
+      <span class="tag" style="background:rgba(245,158,11,0.15);color:#fbbf24">Incomplete</span>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(99,102,241,0.15)">🕸️</div>
+      <h3>Agents without ontology</h3>
+      <p>No world model means agents cannot plan multi-step actions across dependent entities — they don't know what affects what, so they guess or hallucinate chains of action.</p>
+      <span class="tag" style="background:rgba(99,102,241,0.15);color:#a5b4fc">Blind planning</span>
+    </div>
+  </div>
+  <div class="answer-box" style="margin-top:1.5rem">
+    <p><strong style="color:var(--accent2)">Key insight:</strong> An ontology is ground truth for your domain. It gives AI systems a machine-readable model of what exists, how things relate, and what rules govern them — enabling accurate reasoning instead of probabilistic guessing.</p>
+  </div>
+</div>
+
+<!-- 2. Ontology-enhanced RAG -->
+<div class="section">
+  <div class="section-label">RAG Enhancement</div>
+  <h2>Ontology-enhanced RAG</h2>
+  <p class="section-intro">Four patterns for using ontology structure to improve retrieval quality beyond pure vector similarity.</p>
+
+  <div id="rag-patterns">
+    <div class="expand-card">
+      <div class="expand-header" onclick="toggleExpand(this)">
+        <span>🗺️ &nbsp;Graph-guided retrieval</span><span class="expand-arrow">▼</span>
+      </div>
+      <div class="expand-body">
+        <p>Instead of only retrieving the most similar chunks, traverse ontology relationships to pull in structurally related content. If the query is about "CRMApp outage", also retrieve chunks about its database, the server it runs on, and dependent services.</p>
+        <p><strong>When to use:</strong> Any domain where entities have dependencies — ITSM, codebases, supply chains, biomedical knowledge.</p>
+        <span class="tag" style="background:rgba(16,185,129,0.15);color:#6ee7b7">High precision</span>
+      </div>
+    </div>
+    <div class="expand-card">
+      <div class="expand-header" onclick="toggleExpand(this)">
+        <span>✂️ &nbsp;Entity-aware chunking</span><span class="expand-arrow">▼</span>
+      </div>
+      <div class="expand-body">
+        <p>Instead of splitting documents by token count, split by ontological entities. A chunk about "Server X" stays together rather than being split mid-sentence, preserving the semantic unit the ontology defines.</p>
+        <p><strong>When to use:</strong> When your documents are structured around domain entities — incident reports, product docs, service runbooks.</p>
+        <span class="tag" style="background:rgba(99,102,241,0.15);color:#a5b4fc">Better boundaries</span>
+      </div>
+    </div>
+    <div class="expand-card">
+      <div class="expand-header" onclick="toggleExpand(this)">
+        <span>🔎 &nbsp;Ontology-based query expansion</span><span class="expand-arrow">▼</span>
+      </div>
+      <div class="expand-body">
+        <p>Before retrieving, expand the user query with related concepts from the ontology. Query "database slow" → ontology lookup → expand with related classes: storage layer, connection pool, query cache — then retrieve across all expanded terms.</p>
+        <p><strong>When to use:</strong> Technical domains with rich synonym and relationship structures. Especially useful for non-expert users querying expert knowledge.</p>
+        <span class="tag" style="background:rgba(245,158,11,0.15);color:#fbbf24">Better recall</span>
+      </div>
+    </div>
+    <div class="expand-card">
+      <div class="expand-header" onclick="toggleExpand(this)">
+        <span>⚡ &nbsp;SPARQL + vector hybrid</span><span class="expand-arrow">▼</span>
+      </div>
+      <div class="expand-body">
+        <p>Use SPARQL for structured fact retrieval (exact relationships, counts, filters) and vector search for fuzzy semantic retrieval. Merge results with Reciprocal Rank Fusion (RRF). SPARQL answers "which services depend on Server X?" — vector answers "what documentation is relevant to this error?"</p>
+        <div class="code-block"><span class="cc"># Hybrid: SPARQL structured + vector semantic</span>
+<span class="ck">def</span> <span class="cf">hybrid_retrieve</span>(query, entity):
+    <span class="cc"># Structured: get dependencies from ontology</span>
+    sparql_results = kg.query(<span class="cs">f"""
+        SELECT ?service WHERE {{
+            ?service :dependsOn :{entity} .
+        }}"""</span>)
+
+    <span class="cc"># Semantic: vector similarity search</span>
+    vector_results = vectordb.search(query, top_k=<span class="cn">10</span>)
+
+    <span class="cc"># Merge with RRF</span>
+    <span class="ck">return</span> reciprocal_rank_fusion(sparql_results, vector_results)</div>
+        <span class="tag" style="background:rgba(34,211,238,0.15);color:#67e8f9">Best of both</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:2rem">
+    <p style="font-size:13px;color:var(--muted);margin-bottom:0.75rem">Ontology-enhanced RAG pipeline</p>
+    <div class="flow">
+      <div class="flow-node hi">User query</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node">Entity extract</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node hi">Ontology lookup</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node">Query expand</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node">Graph + Vector</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node gr">LLM answer</div>
+    </div>
+  </div>
+</div>
+
+<!-- 3. Knowledge graphs -->
+<div class="section">
+  <div class="section-label">Knowledge Graphs</div>
+  <h2>Knowledge graphs — ontology at scale</h2>
+  <p class="section-intro">A knowledge graph is an ontology populated with millions of real-world instances. The ontology defines the schema; the KG adds the data.</p>
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-icon" style="background:rgba(99,102,241,0.15)">🏢</div>
+      <h3>Enterprise KG</h3>
+      <p>Internal company data modelled as a graph — employees, projects, systems, customers, incidents. Enables cross-silo search and relationship queries impossible with siloed databases.</p>
+      <span class="tag" style="background:rgba(99,102,241,0.15);color:#a5b4fc">Internal</span>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(34,211,238,0.15)">🌐</div>
+      <h3>Open KG</h3>
+      <p>Publicly available knowledge graphs: Wikidata (100M+ entities), DBpedia (Wikipedia as RDF), Freebase (now Google KG). Used for entity linking, disambiguation, enrichment.</p>
+      <span class="tag" style="background:rgba(34,211,238,0.15);color:#67e8f9">Public</span>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(16,185,129,0.15)">🔬</div>
+      <h3>Domain KG</h3>
+      <p>Deep specialist knowledge: SNOMED CT (clinical terms), UniProt (proteins), ITIL ontology (ITSM), legal ontologies. Built with domain experts — high accuracy, narrow scope.</p>
+      <span class="tag" style="background:rgba(16,185,129,0.15);color:#6ee7b7">Specialist</span>
+    </div>
+  </div>
+  <div style="margin-top:2rem">
+    <p style="font-size:13px;color:var(--muted);margin-bottom:0.75rem">Building a KG from raw data</p>
+    <div class="flow">
+      <div class="flow-node">Raw data sources</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node hi">NER</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node hi">Relation extraction</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node">Ontology alignment</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node gr">Knowledge Graph</div>
+    </div>
+  </div>
+</div>
+
+<!-- 4. CMDB as ontology -->
+<div class="section">
+  <div class="section-label">ITSM</div>
+  <h2>CMDB as an ontology</h2>
+  <p class="section-intro">A Configuration Management Database is an applied ontology — CI types are classes, CI attributes are properties, and relationships between CIs are object properties.</p>
+  <table class="scale-table">
+    <thead><tr><th>CMDB concept</th><th>Ontology equivalent</th><th>Example</th></tr></thead>
+    <tbody>
+      <tr><td>CI Type</td><td>Class</td><td>Server, Application, Database, NetworkDevice</td></tr>
+      <tr><td>CI Attribute</td><td>Data property</td><td>ipAddress, os, version, region</td></tr>
+      <tr><td>CI Relationship</td><td>Object property</td><td>hosts, dependsOn, connectedTo, managedBy</td></tr>
+      <tr><td>CI Instance</td><td>Individual</td><td>prod-db-01, crm-app, api-gateway</td></tr>
+      <tr><td>Change impact scope</td><td>Inferred class membership</td><td>all CIs in dependency chain of affected CI</td></tr>
+    </tbody>
+  </table>
+  <div style="margin-top:2rem">
+    <p style="font-size:13px;color:var(--muted);margin-bottom:0.75rem">Ontology-backed impact analysis</p>
+    <div class="flow">
+      <div class="flow-node hi">Alert fires</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node">CMDB lookup</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node hi">Dependency traversal</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node">Affected CIs</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node gr">Root cause CI</div>
+    </div>
+  </div>
+  <div class="answer-box" style="margin-top:1.5rem">
+    <p><strong style="color:var(--accent2)">Flat CMDB vs ontology-backed CMDB:</strong> A flat CMDB stores relationships as database rows — you can query direct links but cannot traverse chains or infer new relationships. An ontology-backed CMDB supports reasoning: if Server A hosts App B which App C depends on, the system can automatically infer that a Server A outage impacts App C — without a hardcoded rule.</p>
+  </div>
+</div>
+
+<!-- 5. AIOps with ontology -->
+<div class="section">
+  <div class="section-label">AIOps</div>
+  <h2>Semantic alert correlation with ontology</h2>
+  <p class="section-intro">Topology ontologies enable impact radius calculation, root cause isolation, and child alert suppression — reducing thousands of alerts to a handful of actionable incidents.</p>
+
+  <div class="two-col">
+    <div class="comp-box">
+      <h4 style="color:var(--muted)">Rule-based correlation</h4>
+      <ul>
+        <li><span>→</span> Hardcoded time windows</li>
+        <li><span>→</span> Manually defined CI groups</li>
+        <li><span>→</span> Breaks when topology changes</li>
+        <li><span>→</span> Cannot infer transitive impact</li>
+        <li><span>→</span> High maintenance overhead</li>
+      </ul>
+    </div>
+    <div class="comp-box" style="border-color:rgba(99,102,241,0.3)">
+      <h4 style="color:#a5b4fc">Ontology-based correlation</h4>
+      <ul>
+        <li><span style="color:var(--green)">✓</span> Traverses live dependency graph</li>
+        <li><span style="color:var(--green)">✓</span> Infers transitive impact automatically</li>
+        <li><span style="color:var(--green)">✓</span> Updates as topology changes</li>
+        <li><span style="color:var(--green)">✓</span> Suppresses child alerts by inference</li>
+        <li><span style="color:var(--green)">✓</span> Explainable reasoning path</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="code-block" style="margin-top:1.5rem"><span class="cc"># SPARQL: find all services affected by a server outage</span>
+<span class="ck">PREFIX</span> <span class="cf">itsm:</span> &lt;http://example.org/itsm#&gt;
+
+<span class="ck">SELECT</span> ?affectedService ?severity
+<span class="ck">WHERE</span> {
+  <span class="cc"># Direct: services hosted on the failed server</span>
+  { itsm:prod-server-01 itsm:hosts ?affectedService . }
+  <span class="ck">UNION</span>
+  <span class="cc"># Transitive: services that depend on hosted services</span>
+  { ?midService itsm:dependsOn ?app .
+    itsm:prod-server-01 itsm:hosts ?app .
+    ?affectedService itsm:dependsOn ?midService . }
+
+  ?affectedService itsm:businessImpact ?severity .
+}
+<span class="ck">ORDER BY DESC</span>(?severity)</div>
+</div>
+
+<!-- 6. LLM grounding -->
+<div class="section">
+  <div class="section-label">LLM Grounding</div>
+  <h2>Grounding LLMs with ontology</h2>
+  <p class="section-intro">Three patterns for using ontology knowledge to make LLM outputs accurate and domain-correct.</p>
+
+  <div id="grounding-tabs">
+    <div class="tab-controls">
+      <button class="tab-btn active" onclick="switchTab('grounding-tabs','gt1',this)">System prompt injection</button>
+      <button class="tab-btn" onclick="switchTab('grounding-tabs','gt2',this)">RAG over triples</button>
+      <button class="tab-btn" onclick="switchTab('grounding-tabs','gt3',this)">Fine-tune on ontology QA</button>
+    </div>
+    <div id="gt1" class="tab-panel active">
+      <div class="card">
+        <h3>Inject ontology into system prompt</h3>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:1rem">Best for small ontologies (&lt;200 classes). Serialise the ontology as natural language or Turtle and include in the system prompt. The LLM then uses it as ground truth when answering.</p>
+        <div class="code-block"><span class="cc"># Convert ontology triples to natural language for LLM</span>
+<span class="ck">def</span> <span class="cf">triples_to_nl</span>(triples):
+    lines = []
+    <span class="ck">for</span> s, p, o <span class="ck">in</span> triples:
+        lines.append(<span class="cs">f"- {s} {p.replace('_',' ')} {o}"</span>)
+    <span class="ck">return</span> <span class="cs">"\n"</span>.join(lines)
+
+system_prompt = <span class="cs">f"""You are an ITSM assistant.
+Domain knowledge:
+{triples_to_nl(ontology.get_core_triples())}
+Only answer based on the above relationships."""</span></div>
+        <span class="tag" style="background:rgba(16,185,129,0.15);color:#6ee7b7">Simple · Fast</span>
+      </div>
+    </div>
+    <div id="gt2" class="tab-panel">
+      <div class="card">
+        <h3>RAG over ontology triples</h3>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:1rem">For large ontologies, embed each triple as a natural language sentence and store in a vector database. Retrieve relevant triples at query time and inject into context. Scales to millions of triples.</p>
+        <div class="code-block"><span class="cc"># Index ontology triples as embeddings</span>
+<span class="ck">for</span> s, p, o <span class="ck">in</span> ontology.triples():
+    sentence = <span class="cs">f"{s} {p} {o}"</span>
+    embedding = embed(sentence)
+    vectordb.upsert(sentence, embedding, metadata={<span class="cs">"s"</span>:s,<span class="cs">"p"</span>:p,<span class="cs">"o"</span>:o})
+
+<span class="cc"># At query time: retrieve relevant triples</span>
+<span class="ck">def</span> <span class="cf">get_ontology_context</span>(query):
+    relevant = vectordb.search(query, top_k=<span class="cn">20</span>)
+    <span class="ck">return</span> <span class="cs">"\n"</span>.join([r.text <span class="ck">for</span> r <span class="ck">in</span> relevant])</div>
+        <span class="tag" style="background:rgba(99,102,241,0.15);color:#a5b4fc">Scalable · Dynamic</span>
+      </div>
+    </div>
+    <div id="gt3" class="tab-panel">
+      <div class="card">
+        <h3>Fine-tune on ontology-derived QA</h3>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:1rem">Generate question-answer pairs from the ontology and fine-tune a smaller LLM on them. The model bakes domain relationships into its weights. Best for stable, slow-changing ontologies.</p>
+        <div class="code-block"><span class="cc"># Generate QA pairs from ontology triples</span>
+qa_pairs = []
+<span class="ck">for</span> s, p, o <span class="ck">in</span> ontology.triples():
+    q = <span class="cs">f"What does {s} {p.replace('_',' ')}?"</span>
+    a = <span class="cs">f"{s} {p.replace('_',' ')} {o}."</span>
+    qa_pairs.append({<span class="cs">"question"</span>: q, <span class="cs">"answer"</span>: a})
+
+<span class="cc"># Fine-tune with generated pairs</span>
+fine_tune(base_model, qa_pairs, epochs=<span class="cn">3</span>)</div>
+        <span class="tag" style="background:rgba(245,158,11,0.15);color:#fbbf24">Baked-in · Latency-free</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 7. Building domain ontology -->
+<div class="section">
+  <div class="section-label">Practical Guide</div>
+  <h2>Building a domain ontology for AI</h2>
+  <p class="section-intro">A pragmatic 5-step approach — start small, validate early, iterate with domain experts.</p>
+  <div class="flow" style="flex-direction:column;align-items:flex-start;gap:0.75rem">
+    <div style="display:flex;align-items:center;gap:1rem;width:100%">
+      <div class="flow-node hi" style="min-width:40px;width:40px;height:40px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700">1</div>
+      <div class="card" style="flex:1;padding:1rem 1.25rem"><strong>Identify entities</strong> — List the 10–20 most important things in your domain. For ITSM: Server, Application, Database, Incident, Change, Person, Team.</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:1rem;width:100%">
+      <div class="flow-node hi" style="min-width:40px;width:40px;height:40px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700">2</div>
+      <div class="card" style="flex:1;padding:1rem 1.25rem"><strong>Define relationships</strong> — For each pair of entities, ask: how can A relate to B? Write these as verb phrases: <em>hosts, dependsOn, assignedTo, triggeredBy</em>.</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:1rem;width:100%">
+      <div class="flow-node hi" style="min-width:40px;width:40px;height:40px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700">3</div>
+      <div class="card" style="flex:1;padding:1rem 1.25rem"><strong>Add constraints</strong> — Write competency questions: "Which servers host mission-critical apps?" If your ontology can't answer it, add the missing relationship or axiom.</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:1rem;width:100%">
+      <div class="flow-node hi" style="min-width:40px;width:40px;height:40px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700">4</div>
+      <div class="card" style="flex:1;padding:1rem 1.25rem"><strong>Populate with instances</strong> — Load real data: CI records from CMDB, service catalogue, asset register. Use NER + relation extraction pipelines for unstructured data.</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:1rem;width:100%">
+      <div class="flow-node gr" style="min-width:40px;width:40px;height:40px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700">5</div>
+      <div class="card" style="flex:1;padding:1rem 1.25rem"><strong>Connect to AI pipeline</strong> — Wire the knowledge graph into your RAG retriever, LLM context builder, or agent's tool set. Version control the ontology in git like code.</div>
+    </div>
+  </div>
+</div>
+
+<!-- 8. Production tooling -->
+<div class="section">
+  <div class="section-label">Tooling</div>
+  <h2>Production tooling</h2>
+  <p class="section-intro">Choose the right store and framework for your scale and use case.</p>
+  <table class="scale-table">
+    <thead><tr><th>Category</th><th>Tool</th><th>Best for</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag" style="background:rgba(99,102,241,0.15);color:#a5b4fc">Triplestore</span></td><td>GraphDB, Apache Jena, Amazon Neptune, Stardog</td><td>Full OWL reasoning, SPARQL, compliance/audit use cases</td></tr>
+      <tr><td><span class="tag" style="background:rgba(34,211,238,0.15);color:#67e8f9">Property graph DB</span></td><td>Neo4j, Azure Cosmos DB (Gremlin), TigerGraph</td><td>High-performance graph traversal, ITSM topology, fraud detection</td></tr>
+      <tr><td><span class="tag" style="background:rgba(16,185,129,0.15);color:#6ee7b7">LLM + KG</span></td><td>LlamaIndex KnowledgeGraph, LangChain graph retrievers, Microsoft GraphRAG</td><td>Ontology-enhanced RAG, LLM grounding, agent world models</td></tr>
+      <tr><td><span class="tag" style="background:rgba(245,158,11,0.15);color:#fbbf24">Ontology editor</span></td><td>Protégé (free), TopBraid Composer (enterprise)</td><td>Building, validating, and maintaining OWL ontologies</td></tr>
+      <tr><td><span class="tag" style="background:rgba(167,139,250,0.15);color:#c4b5fd">Embedding + graph</span></td><td>Qdrant + NetworkX, Weaviate + custom graph layer</td><td>Hybrid vector + ontology retrieval in production</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- 9. End-to-end architecture -->
+<div class="section">
+  <div class="section-label">End-to-End</div>
+  <h2>Complete ontology-powered AI architecture</h2>
+  <p class="section-intro">How all the pieces connect in a production system.</p>
+  <div class="flow">
+    <div class="flow-node">Domain experts</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node hi">Ontology (OWL)</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node hi">Knowledge Graph</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">SPARQL + Vector</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node hi">LLM + Context</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node gr">Grounded answer</div>
+  </div>
+  <div class="answer-box">
+    <h3>What this architecture gives you</h3>
+    <p><strong style="color:var(--text)">Accuracy:</strong> LLM answers are grounded in your ontology's verified relationships — not hallucinated. When the LLM says "AppServer1 is critical infrastructure", it's because the ontology inferred it from real data, not because the model guessed.</p>
+    <p><strong style="color:var(--text)">Explainability:</strong> Every answer can be traced back through the SPARQL query and ontology path that produced it — essential for compliance, audit, and trust in enterprise AI systems.</p>
+    <p><strong style="color:var(--text)">Freshness:</strong> The knowledge graph is updated from live data sources. The LLM context reflects current state — not stale training data. This is especially critical for ITSM, security, and operational AI systems.</p>
+    <p><strong style="color:var(--text)">Scale:</strong> The ontology is defined once. New entities are added as instances. Reasoning rules apply automatically to all new data without retraining the LLM or updating prompts.</p>
+  </div>
+</div>
+
+<footer>
+  <span>Kuldeep Rao</span> &nbsp;·&nbsp; Ontology in AI & Enterprise &nbsp;·&nbsp; <a href="index.html" style="color:var(--accent);text-decoration:none">← Part 1: Fundamentals</a>
+</footer>
+
+<script>
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.section').forEach(s => observer.observe(s));
+
+function toggleExpand(header) {
+  const body = header.nextElementSibling;
+  const arrow = header.querySelector('.expand-arrow');
+  const open = body.style.display === 'block';
+  body.style.display = open ? 'none' : 'block';
+  arrow.style.transform = open ? 'rotate(0deg)' : 'rotate(180deg)';
+}
+
+function switchTab(containerId, panelId, btn) {
+  const c = document.getElementById(containerId);
+  c.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  c.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(panelId).classList.add('active');
+  btn.classList.add('active');
+}
+</script>
+</body>
+</html>
