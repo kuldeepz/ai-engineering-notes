@@ -1,0 +1,72 @@
+# =============================================================================
+#  SEMANTIC LAYER  (a.k.a. the ontology / business-glossary)
+#
+#  This file is the bridge between how people *talk* and how the database is
+#  *built*. It maps business concepts -> physical tables/columns, and natural-
+#  language phrases -> concrete column values.
+#
+#  This is the single most important file in the project. Without it, no LLM
+#  reliably turns "show me open issues" into  WHERE status IN ('active', ...).
+#  With it, the LLM barely has to guess.
+#
+#  At real scale (500 tables) this would be generated/maintained per-domain and
+#  retrieved from, not hand-written in one file -- but the shape is the same.
+# =============================================================================
+
+tables:
+  incident:
+    description: IT incidents / tickets raised by users when something breaks.
+    synonyms: [incident, issue, ticket, problem, case, bug, fault]
+    columns:
+      id:          { type: INTEGER, description: "Primary key" }
+      title:       { type: TEXT,    description: "Short summary of the incident" }
+      status:      { type: TEXT,    description: "Lifecycle state of the incident" }
+      priority:    { type: TEXT,    description: "P1 (highest) .. P4 (lowest)" }
+      assignee:    { type: TEXT,    description: "Person currently working it" }
+      created_at:  { type: TEXT,    description: "ISO timestamp the incident was opened" }
+
+  change_request:
+    description: Planned changes to IT systems (RFCs).
+    synonyms: [change, change request, rfc, changes]
+    columns:
+      id:          { type: INTEGER, description: "Primary key" }
+      title:       { type: TEXT,    description: "Short summary of the change" }
+      status:      { type: TEXT,    description: "Lifecycle state of the change" }
+      risk:        { type: TEXT,    description: "low / medium / high" }
+      requester:   { type: TEXT,    description: "Person who requested the change" }
+
+# -----------------------------------------------------------------------------
+#  VALUE SYNONYMS
+#  Maps the words people say about a column's value to the actual values stored
+#  in that column. "open" / "active" / "unresolved" all mean the same set of
+#  raw status values.  Grouped so synonyms collapse onto one canonical group.
+# -----------------------------------------------------------------------------
+value_synonyms:
+  incident.status:
+    groups:
+      active: [active, new, in_progress]          # raw DB values meaning "open"
+      closed: [resolved, closed, cancelled]       # raw DB values meaning "done"
+    phrases:                                       # word people say -> group
+      open: active
+      active: active
+      unresolved: active
+      "in progress": active
+      pending: active
+      ongoing: active
+      closed: closed
+      resolved: closed
+      done: closed
+      fixed: closed
+      completed: closed
+
+  change_request.status:
+    groups:
+      open: [draft, scheduled, in_review]
+      done: [implemented, closed, rejected]
+    phrases:
+      open: open
+      pending: open
+      scheduled: open
+      closed: done
+      done: done
+      implemented: done
