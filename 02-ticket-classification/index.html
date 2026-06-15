@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ticket Classification — ITSM AI</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg: #0f1117; --bg2: #161b27; --bg3: #1e2535;
+  --border: rgba(255,255,255,0.08);
+  --text: #e2e8f0; --muted: #8892a4;
+  --accent: #6366f1; --accent2: #22d3ee; --accent3: #f59e0b;
+  --green: #10b981; --red: #f43f5e; --purple: #a78bfa;
+  --font: 'Inter', sans-serif; --mono: 'JetBrains Mono', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 15px; line-height: 1.7; overflow-x: hidden; }
+
+.hero { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 4rem 2rem; position: relative; overflow: hidden; }
+.hero-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(99,102,241,0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(99,102,241,0.07) 1px, transparent 1px); background-size: 48px 48px; mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%); }
+.hero-glow { position: absolute; width: 600px; height: 600px; border-radius: 50%; background: radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%); top: 50%; left: 50%; transform: translate(-50%,-50%); pointer-events: none; }
+.hero-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.3); border-radius: 100px; padding: 6px 16px; font-size: 12px; font-weight: 500; color: #a5b4fc; margin-bottom: 2rem; letter-spacing: 0.05em; text-transform: uppercase; }
+.hero h1 { font-size: clamp(2.5rem,6vw,4.5rem); font-weight: 600; letter-spacing: -0.03em; line-height: 1.1; margin-bottom: 1.5rem; position: relative; }
+.hero h1 span { background: linear-gradient(135deg,#6366f1,#22d3ee); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.hero p { font-size: 1.15rem; color: var(--muted); max-width: 600px; margin-bottom: 3rem; position: relative; }
+.hero-stats { display: flex; gap: 3rem; position: relative; flex-wrap: wrap; justify-content: center; }
+.stat { text-align: center; }
+.stat-num { font-size: 2rem; font-weight: 600; color: var(--accent2); font-family: var(--mono); }
+.stat-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.scroll-hint { position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%); color: var(--muted); font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; animation: bounce 2s ease-in-out infinite; }
+@keyframes bounce { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(8px)} }
+
+.section { max-width: 960px; margin: 0 auto; padding: 5rem 2rem; opacity: 0; transform: translateY(30px); transition: opacity 0.6s ease, transform 0.6s ease; }
+.section.visible { opacity: 1; transform: translateY(0); }
+.section-label { font-size: 11px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.75rem; }
+.section h2 { font-size: clamp(1.6rem,3vw,2.2rem); font-weight: 600; letter-spacing: -0.02em; margin-bottom: 1rem; line-height: 1.2; }
+.section-intro { color: var(--muted); font-size: 1.05rem; max-width: 700px; margin-bottom: 3rem; }
+
+.card { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem; transition: border-color 0.2s, transform 0.2s; }
+.card:hover { border-color: rgba(99,102,241,0.3); transform: translateY(-2px); }
+.card-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(260px,1fr)); gap: 1rem; }
+.card-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 1rem; }
+.card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; }
+.card p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+.tag { display: inline-block; font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 100px; margin-top: 0.75rem; }
+
+.evolution-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(200px,1fr)); gap: 1rem; margin-top: 2rem; }
+.era-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem; cursor: pointer; transition: all 0.3s; }
+.era-card:hover { border-color: rgba(99,102,241,0.3); transform: translateY(-2px); }
+.era-card.active { border-color: var(--accent); background: rgba(99,102,241,0.08); }
+.era-year { font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--accent); margin-bottom: 0.5rem; letter-spacing: 0.1em; }
+.era-title { font-size: 1rem; font-weight: 600; margin-bottom: 0.4rem; }
+.era-sub { font-size: 12px; color: var(--muted); }
+.era-detail { display: none; grid-column: 1/-1; background: rgba(99,102,241,0.05); border: 1px solid rgba(99,102,241,0.2); border-radius: 12px; padding: 1.5rem; font-size: 13px; color: var(--muted); line-height: 1.8; animation: fadeIn 0.3s ease; }
+.era-detail.open { display: block; }
+
+.tab-controls { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem; }
+.tab-btn { padding: 8px 18px; border-radius: 8px; border: 1px solid transparent; background: transparent; color: var(--muted); font-family: var(--font); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+.tab-btn.active { background: rgba(99,102,241,0.15); border-color: rgba(99,102,241,0.3); color: #a5b4fc; }
+.tab-btn:hover:not(.active) { color: var(--text); }
+.tab-panel { display: none; animation: fadeIn 0.3s ease; }
+.tab-panel.active { display: block; }
+
+.flow { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin: 1.5rem 0; }
+.flow-node { background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 0.6rem 1rem; font-size: 12px; font-weight: 500; text-align: center; min-width: 90px; line-height: 1.4; }
+.flow-arrow { color: var(--muted); font-size: 16px; flex-shrink: 0; }
+.flow-node.hi { background: rgba(99,102,241,0.15); border-color: rgba(99,102,241,0.4); color: #a5b4fc; }
+
+.bar-chart { margin-top: 1.5rem; }
+.bar-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem; font-size: 13px; }
+.bar-label { width: 150px; color: var(--muted); flex-shrink: 0; font-size: 12px; }
+.bar-track { flex: 1; height: 28px; background: var(--bg3); border-radius: 6px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 6px; display: flex; align-items: center; padding-left: 10px; font-size: 11px; font-weight: 600; color: white; }
+
+.metrics-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(200px,1fr)); gap: 1rem; margin-top: 1.5rem; }
+.metric-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; padding: 1.25rem; }
+.metric-formula { font-family: var(--mono); font-size: 13px; color: var(--accent2); margin: 0.5rem 0; padding: 0.5rem; background: var(--bg3); border-radius: 6px; }
+.metric-name { font-size: 15px; font-weight: 600; margin-bottom: 0.25rem; }
+.metric-desc { font-size: 12px; color: var(--muted); line-height: 1.6; }
+
+.f1-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 1.5rem; }
+.f1-table th { text-align: left; padding: 10px 16px; background: var(--bg3); color: var(--muted); font-weight: 500; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+.f1-table th:first-child { border-radius: 8px 0 0 8px; }
+.f1-table th:last-child { border-radius: 0 8px 8px 0; }
+.f1-table td { padding: 10px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.f1-table tr:last-child td { border-bottom: none; }
+.f1-bar { height: 6px; border-radius: 3px; background: var(--bg3); overflow: hidden; width: 80px; }
+.f1-bar-fill { height: 100%; border-radius: 3px; }
+
+.scale-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 1.5rem; }
+.scale-table th { text-align: left; padding: 10px 16px; background: var(--bg3); color: var(--muted); font-weight: 500; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+.scale-table th:first-child { border-radius: 8px 0 0 8px; }
+.scale-table th:last-child { border-radius: 0 8px 8px 0; }
+.scale-table td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: top; line-height: 1.6; }
+.scale-table tr:last-child td { border-bottom: none; }
+.scale-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+.answer-box { background: linear-gradient(135deg,rgba(99,102,241,0.08),rgba(34,211,238,0.05)); border: 1px solid rgba(99,102,241,0.25); border-radius: 16px; padding: 2rem; margin-top: 2rem; }
+.answer-box p { font-size: 14px; color: var(--muted); line-height: 1.9; }
+.answer-box p + p { margin-top: 0.75rem; }
+
+.code-block { background: var(--bg3); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem 1.5rem; font-family: var(--mono); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: 1rem; }
+.cc { color: #6b7280; } .ck { color: #a78bfa; } .cs { color: #34d399; } .cf { color: #60a5fa; } .cn { color: #f59e0b; }
+
+.badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; }
+.divider { width: 100%; height: 1px; background: linear-gradient(90deg,transparent,var(--border),transparent); margin: 2rem 0; }
+
+@keyframes fadeIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+.pulse { animation: pulse 2s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 3px; }
+@media (max-width:640px) { .hero-stats{gap:1.5rem} .flow{flex-direction:column} .flow-arrow{transform:rotate(90deg)} .tab-btn{padding:6px 12px;font-size:12px} }
+@media (prefers-reduced-motion:reduce) { *,.section{animation:none!important;transition:none!important} }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-badge">
+    <span class="pulse" style="width:6px;height:6px;background:#22d3ee;border-radius:50%;display:inline-block"></span>
+    NLP · ITSM · Classification · ML
+  </div>
+  <h1>Ticket Classification<br><span>End-to-End Guide</span></h1>
+  <p>From rule-based keyword matching to LLM-powered zero-shot classification — how to build, evaluate, and scale automatic ticket routing for enterprise ITSM.</p>
+  <div class="hero-stats">
+    <div class="stat"><div class="stat-num">4</div><div class="stat-label">Evolution eras</div></div>
+    <div class="stat"><div class="stat-num">6</div><div class="stat-label">Eval metrics</div></div>
+    <div class="stat"><div class="stat-num">50L+</div><div class="stat-label">Scale covered</div></div>
+    <div class="stat"><div class="stat-num">∞</div><div class="stat-label">Feedback loop</div></div>
+  </div>
+  <div class="scroll-hint"><span>Scroll to explore</span><span>↓</span></div>
+</div>
+
+<!-- S1: WHAT IS IT -->
+<div class="section" id="s1">
+  <div class="section-label">Foundation</div>
+  <h2>What is ticket classification and why does it matter?</h2>
+  <p class="section-intro">In enterprise ITSM, thousands of support tickets arrive daily. Routing them to the right team manually is slow, error-prone, and doesn't scale.</p>
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-icon" style="background:rgba(244,63,94,0.15)">🎫</div>
+      <h3>The routing problem</h3>
+      <p>A user submits: "I can't log in to the VPN and my laptop is running very slow." Is this Access Management, Network, or Hardware? Getting this wrong means the ticket sits with the wrong team — multiplied by 10,000 tickets a day.</p>
+      <span class="tag" style="background:rgba(244,63,94,0.15);color:#f43f5e">Routing errors cost time</span>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(34,211,238,0.15)">🤖</div>
+      <h3>What classification does</h3>
+      <p>An ML model reads the ticket text and predicts the correct category, priority, or team in milliseconds. The ticket is routed automatically — no human triage for standard cases. Agents focus on complex, ambiguous tickets only.</p>
+      <span class="tag" style="background:rgba(16,185,129,0.15);color:#10b981">Sub-second routing</span>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(245,158,11,0.15)">📊</div>
+      <h3>What you're predicting</h3>
+      <p>Category (Network / Access / Hardware / Software), Priority (P1–P4), Assignment Group, and Sentiment. Each is a separate classification task — or a multi-label model predicting all simultaneously.</p>
+      <span class="tag" style="background:rgba(245,158,11,0.15);color:#f59e0b">Multi-label prediction</span>
+    </div>
+  </div>
+</div>
+
+<!-- S2: EVOLUTION -->
+<div class="section" id="s2">
+  <div class="section-label">Evolution</div>
+  <h2>Four eras of ticket classification — click each to expand</h2>
+  <p class="section-intro">The approach has changed dramatically over the last decade. Understanding each era's tradeoffs helps you choose the right tool for your current scale and data situation.</p>
+  <div class="evolution-grid" id="evo-grid">
+    <div class="era-card" onclick="toggleEra('era1', this)">
+      <div class="era-year">ERA 01 · Pre-2015</div>
+      <div class="era-title">Rule-based systems</div>
+      <div class="era-sub">Keyword matching &amp; if/else trees</div>
+    </div>
+    <div class="era-card" onclick="toggleEra('era2', this)">
+      <div class="era-year">ERA 02 · 2015–2019</div>
+      <div class="era-title">Traditional ML</div>
+      <div class="era-sub">TF-IDF + Naive Bayes / LinearSVC</div>
+    </div>
+    <div class="era-card" onclick="toggleEra('era3', this)">
+      <div class="era-year">ERA 03 · 2019–2022</div>
+      <div class="era-title">Embeddings + LinearSVC</div>
+      <div class="era-sub">SBERT / BERT + lightweight classifier</div>
+    </div>
+    <div class="era-card" onclick="toggleEra('era4', this)">
+      <div class="era-year">ERA 04 · 2023–Now</div>
+      <div class="era-title">LLM-powered</div>
+      <div class="era-sub">Zero-shot / few-shot with GPT-4</div>
+    </div>
+    <div class="era-detail" id="era1">
+      <strong style="color:var(--text)">How it works:</strong> Maintain a keyword list per category. If ticket contains "password" or "login" → Access. If "crash" or "BSOD" → Hardware. Rules are hand-crafted by domain experts.<br><br>
+      <strong style="color:var(--text)">When to use:</strong> Fewer than 10 categories and consistent, predictable ticket language. Good for a rapid prototype or as a high-confidence override layer.<br><br>
+      <strong style="color:var(--text)">Limitations:</strong> Breaks with synonyms ("can't get in" vs "access denied"), multi-topic tickets, and new terminology. Maintenance becomes a full-time job at scale. Real-world accuracy: 60–70%.<br><br>
+      <strong style="color:var(--text)">Still useful:</strong> As a fallback for deterministic edge cases ("password reset" → always Access team) and as a pre-filter before the ML model runs.
+    </div>
+    <div class="era-detail" id="era2">
+      <strong style="color:var(--text)">How it works:</strong> Convert ticket text to a TF-IDF vector (word frequency weighted by corpus rarity). Train LinearSVC or Naive Bayes on labelled tickets. Trains in seconds, inferences in under 5ms.<br><br>
+      <strong style="color:var(--text)">When to use:</strong> 5,000–100,000 labelled tickets, fewer than 50 categories. LinearSVC specifically is surprisingly strong — often matches deep learning on small ITSM datasets while being far simpler.<br><br>
+      <strong style="color:var(--text)">Limitations:</strong> No semantic understanding — "Network is NOT the problem" and "Network problem" look similar. Struggles with misspellings and language variations. Accuracy plateau: ~82–86%.<br><br>
+      <strong style="color:var(--text)">Why LinearSVC over Naive Bayes:</strong> LinearSVC handles multi-class better, is robust to feature scale, and produces reliable decision boundaries. Naive Bayes is faster to train but lower accuracy on imbalanced data.
+    </div>
+    <div class="era-detail" id="era3">
+      <strong style="color:var(--text)">How it works:</strong> Use a pre-trained sentence transformer (SBERT or OpenAI embeddings) to convert each ticket to a 768-dim semantic vector. Then train a LinearSVC on those vectors. This is the production sweet spot for most ITSM setups.<br><br>
+      <strong style="color:var(--text)">Why this combination wins:</strong> SBERT captures "can't log in" and "access denied" as nearly identical vectors. LinearSVC classifies fast. The full pipeline trains in minutes on a laptop. Accuracy: 88–94% on ITSM data with 1,000+ samples per class.<br><br>
+      <strong style="color:var(--text)">LSTM (older approach):</strong> LSTM reads word sequences and learns context. Outperforms TF-IDF but slower to train and requires more data than SBERT+LinearSVC. The SBERT approach replaces LSTM for most use cases.<br><br>
+      <strong style="color:var(--text)">When to choose SBERT over OpenAI embeddings:</strong> SBERT runs locally (no API cost, no latency, no data leaving your infrastructure). For 50L+ tickets this matters — OpenAI embedding cost at that scale becomes significant.
+    </div>
+    <div class="era-detail" id="era4">
+      <strong style="color:var(--text)">Zero-shot:</strong> Send ticket text + category list to GPT-4. No training data needed. Works immediately on new categories. Great for prototyping or handling rare ticket types.<br><br>
+      <strong style="color:var(--text)">Few-shot:</strong> Include 2–3 examples per category in the prompt. Significantly improves accuracy without any model training. Practical for up to ~20 categories.<br><br>
+      <strong style="color:var(--text)">Limitations:</strong> Cost ($0.002–0.01 per ticket), latency (1–3s vs &lt;10ms for LinearSVC), privacy risk (ticket content leaves your network), output format variability.<br><br>
+      <strong style="color:var(--text)">The hybrid pattern that works in production:</strong> Use LinearSVC+SBERT for 80% of tickets (confidence &gt; 0.75). Route low-confidence tickets to GPT-4. Best of both — low cost for bulk, high accuracy for edge cases.
+    </div>
+  </div>
+</div>
+
+<!-- S3: ARCHITECTURE -->
+<div class="section" id="s3">
+  <div class="section-label">Architecture</div>
+  <h2>Pipeline architecture — click each approach</h2>
+  <p class="section-intro">Each era has a distinct pipeline. The modern production approach combines pre-trained embeddings with a lightweight classifier for the best accuracy-to-cost ratio.</p>
+  <div class="tab-controls">
+    <button class="tab-btn active" onclick="switchTab('t1',this)">Rule-based</button>
+    <button class="tab-btn" onclick="switchTab('t2',this)">TF-IDF + SVM</button>
+    <button class="tab-btn" onclick="switchTab('t3',this)">SBERT + LinearSVC</button>
+    <button class="tab-btn" onclick="switchTab('t4',this)">LLM zero-shot</button>
+  </div>
+
+  <div id="t1" class="tab-panel active">
+    <div style="color:var(--muted);font-size:13px;margin-bottom:1rem">Keyword matching with hand-crafted rules. Fast but brittle. Accuracy ceiling: ~70%.</div>
+    <div class="flow">
+      <div class="flow-node">Ticket text</div><div class="flow-arrow">→</div>
+      <div class="flow-node hi">Keyword<br>extractor</div><div class="flow-arrow">→</div>
+      <div class="flow-node hi">Rule engine<br><span style="font-size:10px;color:var(--muted)">if/else tree</span></div><div class="flow-arrow">→</div>
+      <div class="flow-node">Category<br>label</div>
+    </div>
+    <div class="code-block">
+      <span class="ck">if</span> <span class="cs">"password"</span> <span class="ck">in</span> text <span class="ck">or</span> <span class="cs">"login"</span> <span class="ck">in</span> text:<br>
+      &nbsp;&nbsp;<span class="ck">return</span> <span class="cs">"Access Management"</span><br>
+      <span class="ck">elif</span> <span class="cs">"crash"</span> <span class="ck">in</span> text <span class="ck">or</span> <span class="cs">"blue screen"</span> <span class="ck">in</span> text:<br>
+      &nbsp;&nbsp;<span class="ck">return</span> <span class="cs">"Hardware"</span><br>
+      <span class="ck">else</span>:<br>
+      &nbsp;&nbsp;<span class="ck">return</span> <span class="cs">"General IT"</span>  <span class="cc"># 30%+ fall here</span>
+    </div>
+  </div>
+
+  <div id="t2" class="tab-panel">
+    <div style="color:var(--muted);font-size:13px;margin-bottom:1rem">TF-IDF converts text to frequency vectors. LinearSVC learns class boundaries. Trains in seconds. Good baseline.</div>
+    <div class="flow">
+      <div class="flow-node">Ticket text</div><div class="flow-arrow">→</div>
+      <div class="flow-node hi">Tokenize<br>+ clean</div><div class="flow-arrow">→</div>
+      <div class="flow-node hi">TF-IDF<br>vectorizer</div><div class="flow-arrow">→</div>
+      <div class="flow-node hi">LinearSVC</div><div class="flow-arrow">→</div>
+      <div class="flow-node">Category +<br>confidence</div>
+    </div>
+    <div class="code-block">
+      <span class="ck">from</span> sklearn.pipeline <span class="ck">import</span> Pipeline<br>
+      <span class="ck">from</span> sklearn.svm <span class="ck">import</span> LinearSVC<br>
+      <span class="ck">from</span> sklearn.feature_extraction.text <span class="ck">import</span> TfidfVectorizer<br><br>
+      pipeline = <span class="cf">Pipeline</span>([<br>
+      &nbsp;&nbsp;(<span class="cs">'tfidf'</span>, <span class="cf">TfidfVectorizer</span>(ngram_range=(<span class="cn">1</span>,<span class="cn">2</span>), max_features=<span class="cn">50000</span>)),<br>
+      &nbsp;&nbsp;(<span class="cs">'clf'</span>, <span class="cf">LinearSVC</span>(C=<span class="cn">1.0</span>, class_weight=<span class="cs">'balanced'</span>))<br>
+      ])<br>
+      pipeline.<span class="cf">fit</span>(X_train, y_train)  <span class="cc"># trains in &lt;30 seconds</span>
+    </div>
+  </div>
+
+  <div id="t3" class="tab-panel">
+    <div style="color:var(--muted);font-size:13px;margin-bottom:1rem">Pre-trained embeddings capture semantic meaning. LinearSVC classifies in embedding space. Production sweet spot — best accuracy/cost ratio.</div>
+    <div class="flow">
+      <div class="flow-node">Ticket text</div><div class="flow-arrow">→</div>
+      <div class="flow-node hi">Sentence<br>transformer<br><span style="font-size:10px">SBERT</span></div><div class="flow-arrow">→</div>
+      <div class="flow-node">768-dim<br>vector</div><div class="flow-arrow">→</div>
+      <div class="flow-node hi">LinearSVC</div><div class="flow-arrow">→</div>
+      <div class="flow-node">Category +<br>confidence</div>
+    </div>
+    <div class="code-block">
+      <span class="ck">from</span> sentence_transformers <span class="ck">import</span> SentenceTransformer<br>
+      <span class="ck">from</span> sklearn.svm <span class="ck">import</span> LinearSVC<br><br>
+      encoder = <span class="cf">SentenceTransformer</span>(<span class="cs">'all-mpnet-base-v2'</span>)  <span class="cc"># runs locally</span><br>
+      X_train_emb = encoder.<span class="cf">encode</span>(X_train, batch_size=<span class="cn">64</span>)<br>
+      X_test_emb = encoder.<span class="cf">encode</span>(X_test, batch_size=<span class="cn">64</span>)<br><br>
+      clf = <span class="cf">LinearSVC</span>(class_weight=<span class="cs">'balanced'</span>, C=<span class="cn">1.0</span>)<br>
+      clf.<span class="cf">fit</span>(X_train_emb, y_train)<br>
+      preds = clf.<span class="cf">predict</span>(X_test_emb)  <span class="cc"># ~8ms per ticket at inference</span>
+    </div>
+  </div>
+
+  <div id="t4" class="tab-panel">
+    <div style="color:var(--muted);font-size:13px;margin-bottom:1rem">LLM classifies from natural language instructions. No training data needed. New categories added by editing a list. High latency and cost.</div>
+    <div class="flow">
+      <div class="flow-node">Ticket text</div><div class="flow-arrow">→</div>
+      <div class="flow-node hi">Prompt<br>builder</div><div class="flow-arrow">→</div>
+      <div class="flow-node hi">LLM API<br><span style="font-size:10px">GPT-4o</span></div><div class="flow-arrow">→</div>
+      <div class="flow-node hi">JSON<br>parser</div><div class="flow-arrow">→</div>
+      <div class="flow-node">Category +<br>reasoning</div>
+    </div>
+    <div class="code-block">
+      prompt = <span class="cf">f</span><span class="cs">"""Classify this IT support ticket into one category.<br>
+      Categories: {categories}<br>
+      Ticket: {ticket_text}<br>
+      Respond as JSON: {{"category": "...", "confidence": 0.0-1.0}}</span><span class="cs">"""</span><br><br>
+      response = openai.<span class="cf">chat</span>(model=<span class="cs">"gpt-4o"</span>, messages=[{<span class="cs">"role"</span>:<span class="cs">"user"</span>,<span class="cs">"content"</span>:prompt}])<br>
+      result = json.<span class="cf">loads</span>(response.choices[<span class="cn">0</span>].message.content)
+    </div>
+  </div>
+</div>
+
+<!-- S4: IMBALANCED DATA -->
+<div class="section" id="s4">
+  <div class="section-label">Data challenge</div>
+  <h2>The imbalanced data problem — and how to fix it</h2>
+  <p class="section-intro">In real ITSM data, "Password Reset" might have 50,000 tickets while "Storage Failure" has 200. A naive model will predict the majority class for everything. Here is how to handle it.</p>
+  <div>
+    <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:1rem;text-transform:uppercase;letter-spacing:0.08em">Typical ITSM ticket distribution</div>
+    <div class="bar-chart" id="bar-chart"></div>
+  </div>
+  <div class="divider"></div>
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-icon" style="background:rgba(99,102,241,0.15)">⚖️</div>
+      <h3>Class weights (apply this first)</h3>
+      <p>Tell the model minority class errors are more costly. <code style="font-family:var(--mono);font-size:11px;color:var(--accent2)">class_weight='balanced'</code> in sklearn calculates weights inversely proportional to class frequency. Free, zero extra code, often sufficient on its own.</p>
+      <span class="tag" style="background:rgba(99,102,241,0.15);color:#a5b4fc">Always apply this</span>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(16,185,129,0.15)">🔼</div>
+      <h3>Oversample minority classes</h3>
+      <p>For text: use back-translation (English → German → English) or LLM paraphrasing to generate synthetic variations of minority class tickets. Effective when you have fewer than 100 real examples for a class.</p>
+      <span class="tag" style="background:rgba(16,185,129,0.15);color:#10b981">For &lt;100 samples per class</span>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(245,158,11,0.15)">🔽</div>
+      <h3>Undersample the majority</h3>
+      <p>Cap dominant classes at a max (e.g. 5× minority class count). Combined with oversampling in a hybrid approach. Use when the majority class is so large that training is slow and class_weight alone isn't enough.</p>
+      <span class="tag" style="background:rgba(245,158,11,0.15);color:#f59e0b">For 100:1+ ratios</span>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(244,63,94,0.15)">🛑</div>
+      <h3>Minimum class threshold</h3>
+      <p>If a class has fewer than 50 samples, don't train it as a standalone category. Merge it into a parent ("Other Hardware") or use LLM zero-shot for that class only. A model trained on 20 samples is unreliable in production.</p>
+      <span class="tag" style="background:rgba(244,63,94,0.15);color:#f43f5e">Hard guard rail</span>
+    </div>
+  </div>
+</div>
+
+<!-- S5: EVALUATION -->
+<div class="section" id="s5">
+  <div class="section-label">Evaluation</div>
+  <h2>How to measure classifier quality — per-class metrics</h2>
+  <p class="section-intro">Accuracy is useless with imbalanced data. A model that always predicts "Password Reset" gets 40% accuracy — which sounds acceptable but it's completely wrong on every other class. Per-class F1 reveals the truth.</p>
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <div class="metric-name">Precision</div>
+      <div class="metric-formula">TP / (TP + FP)</div>
+      <div class="metric-desc">Of all tickets labeled "Network" by the model, how many were actually Network? Low precision = false alarms. The Network team wastes time on irrelevant tickets.</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-name">Recall</div>
+      <div class="metric-formula">TP / (TP + FN)</div>
+      <div class="metric-desc">Of all actual Network tickets, how many did the model catch? Low recall = Network tickets misrouted to wrong teams. P1 incidents reach wrong engineers.</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-name">F1 Score</div>
+      <div class="metric-formula">2 × P × R / (P + R)</div>
+      <div class="metric-desc">Harmonic mean of precision and recall. The number to optimise for imbalanced datasets. Report per class, not just overall average — the average hides weak classes.</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-name">Macro F1</div>
+      <div class="metric-formula">avg(F1 per class)</div>
+      <div class="metric-desc">Unweighted average of F1 across all classes. Treats a rare class equal to a common class. The primary metric to track for ITSM classification. Target: &gt;0.82 in production.</div>
+    </div>
+  </div>
+  <div class="divider"></div>
+  <div style="font-size:1rem;font-weight:600;margin-bottom:0.4rem">Per-class F1 — example production model</div>
+  <p style="font-size:13px;color:var(--muted);margin-bottom:0;max-width:640px">Notice how minority classes (Storage Failure) have much lower F1. These are the ones to investigate first — more data, better augmentation, or LLM fallback for that class.</p>
+  <table class="f1-table" id="f1-table"></table>
+</div>
+
+<!-- S6: FEEDBACK LOOP -->
+<div class="section" id="s6">
+  <div class="section-label">Continuous improvement</div>
+  <h2>Feedback loop design</h2>
+  <p class="section-intro">A deployed classifier should improve automatically from agent corrections. Without a feedback loop, the model drifts as ticket language evolves and new issue types emerge.</p>
+
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:2rem;margin-top:1.5rem">
+    <div style="display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:0.75rem;font-size:13px">
+      <div class="flow-node hi" style="padding:1rem 1.25rem;line-height:1.5">🎫 New ticket<br>arrives</div>
+      <div class="flow-arrow" style="font-size:20px">→</div>
+      <div class="flow-node hi" style="padding:1rem 1.25rem;line-height:1.5">🤖 Model<br>classifies</div>
+      <div class="flow-arrow" style="font-size:20px">→</div>
+      <div class="flow-node" style="padding:1rem 1.25rem;line-height:1.5">👤 Agent<br>reviews</div>
+      <div class="flow-arrow" style="font-size:20px">→</div>
+      <div class="flow-node" style="padding:1rem 1.25rem;line-height:1.5">✅ Confirm<br>or ✏️ Correct</div>
+      <div class="flow-arrow" style="font-size:20px">→</div>
+      <div class="flow-node hi" style="padding:1rem 1.25rem;line-height:1.5">💾 Store in<br>training DB</div>
+    </div>
+    <div style="text-align:center;margin:1.25rem 0;color:var(--muted);font-size:12px">↓ weekly or when drift detected ↓</div>
+    <div style="display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:0.75rem;font-size:13px">
+      <div class="flow-node hi" style="padding:1rem 1.25rem;line-height:1.5">📊 Drift<br>monitor</div>
+      <div class="flow-arrow" style="font-size:20px">→</div>
+      <div class="flow-node hi" style="padding:1rem 1.25rem;line-height:1.5">🔄 Retrain<br>model</div>
+      <div class="flow-arrow" style="font-size:20px">→</div>
+      <div class="flow-node" style="padding:1rem 1.25rem;line-height:1.5">🧪 Evaluate<br>vs baseline</div>
+      <div class="flow-arrow" style="font-size:20px">→</div>
+      <div class="flow-node hi" style="padding:1rem 1.25rem;line-height:1.5">🚀 Deploy if<br>F1 improved</div>
+    </div>
+  </div>
+
+  <div class="card-grid" style="margin-top:1.5rem">
+    <div class="card">
+      <div class="card-icon" style="background:rgba(99,102,241,0.15)">🎯</div>
+      <h3>Confidence threshold routing</h3>
+      <p>Auto-route only tickets with model confidence &gt; 0.75. Send low-confidence tickets to a human review queue. These become the best training examples — they're the ambiguous edge cases the model hasn't learned yet.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(245,158,11,0.15)">📉</div>
+      <h3>Drift detection signals</h3>
+      <p>Monitor weekly: if agent correction rate on auto-routed tickets rises above 15%, trigger a retrain. Also monitor new vocabulary appearing in tickets that wasn't in the training corpus — signals a new incident type or product launch.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(16,185,129,0.15)">🆕</div>
+      <h3>New category protocol</h3>
+      <p>New product or team? Collect 50+ labelled examples first. Add the class with class_weight compensation. Evaluate new class F1 before deploying. For &lt;50 examples, use LLM zero-shot for that category while collecting data in the background.</p>
+    </div>
+  </div>
+</div>
+
+<!-- S7: SCALE -->
+<div class="section" id="s7">
+  <div class="section-label">Scale</div>
+  <h2>What changes at 50 lakh tickets</h2>
+  <p class="section-intro">The pipeline that works for 10,000 tickets needs architectural changes at 50 lakh. Throughput, cost, and retraining cadence all become critical.</p>
+  <table class="scale-table">
+    <thead>
+      <tr><th>Scale</th><th>Volume</th><th>Recommended approach</th><th>Latency target</th><th>Key concern</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="badge" style="background:rgba(16,185,129,0.15);color:#10b981">Small</span></td>
+        <td style="font-family:var(--mono);font-size:12px">&lt; 50K</td>
+        <td>TF-IDF + LinearSVC or SBERT + LinearSVC</td>
+        <td>&lt; 100ms</td>
+        <td>Getting accuracy right, building labelled dataset</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:rgba(245,158,11,0.15);color:#f59e0b">Medium</span></td>
+        <td style="font-family:var(--mono);font-size:12px">50K – 5L</td>
+        <td>SBERT + LinearSVC, async queue, weekly retrains</td>
+        <td>&lt; 50ms</td>
+        <td>Feedback loop, model freshness, drift monitoring</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:rgba(244,63,94,0.15);color:#f43f5e">Large</span></td>
+        <td style="font-family:var(--mono);font-size:12px">5L – 50L</td>
+        <td>Streaming pipeline (Kafka), batched embeddings, ONNX model serving</td>
+        <td>&lt; 20ms</td>
+        <td>Throughput, multi-tenant isolation, retraining cost</td>
+      </tr>
+      <tr>
+        <td><span class="badge" style="background:rgba(167,139,250,0.15);color:#a78bfa">Massive</span></td>
+        <td style="font-family:var(--mono);font-size:12px">50L+</td>
+        <td>Distilled BERT, cached embeddings, distributed serving, A/B testing</td>
+        <td>&lt; 10ms</td>
+        <td>Cost per classification, GPU vs CPU tradeoff</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="card-grid" style="margin-top:1.5rem">
+    <div class="card">
+      <div class="card-icon" style="background:rgba(99,102,241,0.15)">⚡</div>
+      <h3>ONNX for production speed</h3>
+      <p>Export your trained LinearSVC + embedding model to ONNX format. ONNX runtime is 2–5× faster than sklearn at inference. Critical when processing 1,000+ tickets per second at peak load.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(34,211,238,0.15)">🧪</div>
+      <h3>A/B test model versions</h3>
+      <p>Never replace production model directly. Route 5% of traffic to new model, compare F1 on agent-corrected tickets after 48 hours. If new model wins, increase gradually. If F1 regresses, roll back immediately.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:rgba(245,158,11,0.15)">💾</div>
+      <h3>Cache embeddings</h3>
+      <p>At 50L tickets, 40–60% are variations of common requests ("password reset", "VPN issue"). Cache embeddings using a hash of normalized text. Reduces embedding compute cost by 40–60% and cuts latency for repeated patterns.</p>
+    </div>
+  </div>
+</div>
+
+<!-- S8: END TO END -->
+<div class="section" id="s8">
+  <div class="section-label">End-to-end solution guide</div>
+  <h2>Complete solution walkthrough</h2>
+  <p class="section-intro">The full production approach from data assessment to deployed classifier with feedback loop — in one coherent flow.</p>
+  <div class="answer-box">
+    <div style="font-size:11px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:1rem">Full solution walkthrough</div>
+    <p>"First assess the existing data — labelled ticket count, number of categories, class distribution. This determines the approach. For most ITSM setups with 10,000+ labelled tickets, the sweet spot is SBERT embeddings with LinearSVC."</p>
+    <p>"Training pipeline: clean ticket text (remove ticket IDs, agent signatures, email threads), encode with all-mpnet-base-v2 SBERT model, train LinearSVC with class_weight='balanced' to handle imbalance. Evaluate with macro F1 and per-class F1 — never accuracy on imbalanced data."</p>
+    <p>"For deployment: wrap in a REST API. On each incoming ticket, embed it, classify, return category + confidence score. If confidence is below 0.70, route to human review queue — these become training examples for the next retrain."</p>
+    <p>"For new categories: collect 50+ labelled examples first, then retrain. Evaluate the new class F1 specifically before deploying. If you can't wait for data, use GPT-4 zero-shot for that category only while collecting examples in the background."</p>
+    <p>"Monitor weekly: agent correction rate, per-class F1 on production traffic, new vocabulary in tickets. Retrain when correction rate exceeds 15% or a new issue type emerges. The feedback loop is what keeps the system accurate as the business evolves."</p>
+  </div>
+  <div class="code-block" style="margin-top:2rem">
+    <span class="cc"># Production ticket classification — core pattern</span><br><br>
+    <span class="ck">class</span> <span class="cf">TicketClassifier</span>:<br>
+    &nbsp;&nbsp;<span class="ck">def</span> <span class="cf">__init__</span>(self):<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;self.encoder = <span class="cf">SentenceTransformer</span>(<span class="cs">'all-mpnet-base-v2'</span>)<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;self.clf = <span class="cf">LinearSVC</span>(class_weight=<span class="cs">'balanced'</span>)<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;self.threshold = <span class="cn">0.70</span><br><br>
+    &nbsp;&nbsp;<span class="ck">def</span> <span class="cf">predict</span>(self, text: str) -> dict:<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;vec = self.encoder.<span class="cf">encode</span>([text])<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;label = self.clf.<span class="cf">predict</span>(vec)[<span class="cn">0</span>]<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;score = self.<span class="cf">confidence</span>(vec)<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;<span class="ck">if</span> score &lt; self.threshold:<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="ck">return</span> {<span class="cs">"label"</span>: <span class="cs">"REVIEW_QUEUE"</span>, <span class="cs">"confidence"</span>: score}<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;<span class="ck">return</span> {<span class="cs">"label"</span>: label, <span class="cs">"confidence"</span>: score}<br><br>
+    &nbsp;&nbsp;<span class="ck">def</span> <span class="cf">retrain</span>(self, tickets: list, labels: list):<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;vecs = self.encoder.<span class="cf">encode</span>(tickets)<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;self.clf.<span class="cf">fit</span>(vecs, labels)  <span class="cc"># includes agent-corrected data</span>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div style="text-align:center;padding:4rem 2rem;color:var(--muted);font-size:13px;border-top:1px solid var(--border)">
+  <p style="margin-bottom:0.5rem">Kuldeep Rao</p>
+  <p>Ticket Classification · ITSM · NLP</p>
+</div>
+
+<script>
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.section').forEach(s => observer.observe(s));
+
+  function toggleEra(id, card) {
+    const detail = document.getElementById(id);
+    const allDetails = document.querySelectorAll('.era-detail');
+    const allCards = document.querySelectorAll('.era-card');
+    const isOpen = detail.classList.contains('open');
+    allDetails.forEach(d => d.classList.remove('open'));
+    allCards.forEach(c => c.classList.remove('active'));
+    if (!isOpen) { detail.classList.add('open'); card.classList.add('active'); }
+  }
+
+  function switchTab(id, btn) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  const barData = [
+    { label: 'Password Reset',  pct: 85, count: '42,000', color: '#6366f1' },
+    { label: 'Software Install', pct: 65, count: '18,000', color: '#22d3ee' },
+    { label: 'Network Issue',   pct: 40, count:  '9,000', color: '#f59e0b' },
+    { label: 'Hardware Fault',  pct: 20, count:  '3,500', color: '#10b981' },
+    { label: 'Access Request',  pct: 12, count:  '1,800', color: '#a78bfa' },
+    { label: 'Storage Failure', pct:  3, count:    '210', color: '#f43f5e' },
+  ];
+  document.getElementById('bar-chart').innerHTML = barData.map(d =>
+    `<div class="bar-row">
+      <div class="bar-label">${d.label}</div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${d.pct}%;background:${d.color}33;border-left:3px solid ${d.color}">
+          <span style="color:${d.color};font-size:11px;font-weight:600">${d.count}</span>
+        </div>
+      </div>
+    </div>`
+  ).join('');
+
+  const f1Data = [
+    { cat: 'Password Reset',  p: 0.94, r: 0.96, f: 0.95, n: '42,000' },
+    { cat: 'Software Install', p: 0.88, r: 0.85, f: 0.86, n: '18,000' },
+    { cat: 'Network Issue',   p: 0.82, r: 0.79, f: 0.81, n:  '9,000' },
+    { cat: 'Hardware Fault',  p: 0.79, r: 0.72, f: 0.75, n:  '3,500' },
+    { cat: 'Access Request',  p: 0.71, r: 0.65, f: 0.68, n:  '1,800' },
+    { cat: 'Storage Failure', p: 0.58, r: 0.44, f: 0.50, n:    '210' },
+  ];
+  const fc = v => v >= 0.85 ? '#10b981' : v >= 0.70 ? '#f59e0b' : '#f43f5e';
+  document.getElementById('f1-table').innerHTML =
+    `<thead><tr><th>Category</th><th>Precision</th><th>Recall</th><th>F1</th><th>Support</th></tr></thead><tbody>` +
+    f1Data.map(d =>
+      `<tr>
+        <td>${d.cat}</td>
+        <td style="font-family:var(--mono);color:${fc(d.p)}">${d.p.toFixed(2)}</td>
+        <td style="font-family:var(--mono);color:${fc(d.r)}">${d.r.toFixed(2)}</td>
+        <td><div style="display:flex;align-items:center;gap:8px">
+          <span style="font-family:var(--mono);font-weight:600;color:${fc(d.f)}">${d.f.toFixed(2)}</span>
+          <div class="f1-bar"><div class="f1-bar-fill" style="width:${d.f*100}%;background:${fc(d.f)}"></div></div>
+        </div></td>
+        <td style="font-family:var(--mono);color:var(--muted)">${d.n}</td>
+      </tr>`
+    ).join('') + `</tbody>`;
+</script>
+</body>
+</html>
